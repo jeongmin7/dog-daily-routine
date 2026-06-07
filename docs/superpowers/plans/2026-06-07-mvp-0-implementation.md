@@ -16,6 +16,18 @@
 
 ---
 
+## 브랜딩 / 디자인 기준 (2026-06-07 핸드오프 반영)
+
+> 이 plan의 코드 예시에 남아있는 `DogHealth`·`#4B7BAD` 표기는 아래 기준으로 읽는다. 단일 기준은 spec 문서 §7.5.
+
+- **브랜드명:** "하루" (코드·카피의 `DogHealth` → `하루`)
+- **primary:** 스카이블루 `#2E92D6` (구 `#4B7BAD` 대체) / **accent:** 코랄 `#FF7A6E`
+- **로고:** 박스 없는 발바닥 라인 심볼 + 워드마크 락업 (파란 사각형 배지 ❌)
+- **폰트:** Pretendard(한글) + Inter(영문)
+- **분업:** 백엔드 코드는 본인이 직접 타이핑(학습). UI/디자인 레이어는 "하루" 핸드오프 시안 기준으로 Claude가 구현하며, shadcn/ui를 베이스로 하루 토큰을 입힌다.
+
+---
+
 ## 사전 약속 (전체에 적용)
 
 1. **AI 사용 원칙:** 코드 생성 요청 ❌ / 막힌 개념 질문 ⭕. 모든 코드는 본인이 타이핑.
@@ -279,7 +291,7 @@ npx shadcn@latest init
     --card-foreground: 215 32% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 215 32% 17%;
-    --primary: 211 41% 49%;             /* #4B7BAD */
+    --primary: 204 67% 51%;             /* #2E92D6 (Sky Blue) */
     --primary-foreground: 0 0% 100%;
     --secondary: 210 38% 95%;           /* #EEF3F8 */
     --secondary-foreground: 215 32% 17%;
@@ -295,7 +307,7 @@ npx shadcn@latest init
     --success-foreground: 0 0% 100%;
     --border: 210 27% 90%;
     --input: 210 27% 90%;
-    --ring: 211 41% 49%;
+    --ring: 204 67% 51%;
     --radius: 0.5rem;
   }
 
@@ -306,7 +318,7 @@ npx shadcn@latest init
     --card-foreground: 210 38% 95%;
     --popover: 215 32% 14%;
     --popover-foreground: 210 38% 95%;
-    --primary: 211 50% 60%;
+    --primary: 204 75% 64%;
     --primary-foreground: 215 32% 10%;
     --secondary: 215 27% 20%;
     --secondary-foreground: 210 38% 95%;
@@ -322,7 +334,7 @@ npx shadcn@latest init
     --success-foreground: 210 38% 95%;
     --border: 215 27% 25%;
     --input: 215 27% 25%;
-    --ring: 211 50% 60%;
+    --ring: 204 75% 64%;
   }
 }
 
@@ -374,7 +386,7 @@ npm run dev
 
 ```bash
 git add .
-git commit -m "feat: setup shadcn/ui with Soft Blue + Coral palette"
+git commit -m "feat: setup shadcn/ui with Sky Blue + Coral palette"
 ```
 
 ---

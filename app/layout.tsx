@@ -1,20 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { AppProvider } from "./providers";
 
 export const metadata: Metadata = {
-  title: "DogHealth Tracker",
-  description: "강아지 건강 상태에 따라 진화하는 적응형 헬스 트래커",
+  title: "하루 — 우리 아이의 하루",
+  description: "강아지 보호자를 위한 일일 건강 트래커",
 };
 
 export default function RootLayout({
@@ -23,15 +13,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      {/* 데스크탑: 중앙 정렬된 회색 배경 / 모바일: 앱이 화면을 꽉 채움 */}
-      <body className="min-h-dvh bg-zinc-100 dark:bg-zinc-950">
-        {/* 모바일 폭(max-w-md ≈ 448px) 앱 컨테이너 */}
-        <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-white shadow-sm dark:bg-black">
-          {children}
+    <html lang="ko">
+      <head>
+        {/* 하루 시안 폰트: Pretendard(한글) + Inter(영문) */}
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>
+        {/* 모바일 우선: 데스크톱에서 회색 페이지 위 중앙 정렬 흰 앱 컬럼 */}
+        <div className="app-column">
+          <AppProvider>{children}</AppProvider>
         </div>
       </body>
     </html>

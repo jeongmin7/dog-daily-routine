@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/app/providers";
 import { BrandLogo } from "@/components/brand";
 import { Btn, Field, TextInput } from "@/components/ui";
+import axios from "axios";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { store } = useApp();
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [name, setName] = useState("");
@@ -16,25 +16,41 @@ export default function SignupPage() {
   const [banner, setBanner] = useState("");
   const [busy, setBusy] = useState(false);
 
-  function submit(e: React.FormEvent) {
+ async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const next: typeof err = {};
-    if (!email.trim()) next.email = "이메일을 입력해주세요";
-    else if (!email.includes("@")) next.email = "올바른 이메일 형식이 아니에요";
-    if (!pw) next.pw = "비밀번호를 입력해주세요";
-    else if (pw.length < 6) next.pw = "비밀번호는 6자 이상이어야 해요";
+    const next: typeof err={}
+    if(!email.trim()){
+      next.email="이메일을 입력해주세요"
+    }
+    else if(!email.includes("@")){
+      next.email="올바른 이메일 형식이 아니에요"
+    }
+    else if(!pw){
+      next.pw="비밀번호를 입력해주세요"
+    }   
+  else if(pw.length<6){
+    next.pw="비밀번호는 6자 이상이어야 해요"
+  }
     setErr(next);
     setBanner("");
-    if (Object.keys(next).length) return;
-    setBusy(true);
-    setTimeout(() => {
-      if (email.trim().toLowerCase() === store.user.email) {
-        setBusy(false);
-        setBanner("이미 가입된 이메일이에요. 로그인해주세요.");
-        return;
-      }
-      router.push(`/login?signup=success&email=${encodeURIComponent(email.trim())}`);
-    }, 800);
+    if(Object.keys(next).length) return;
+ setBusy(true);
+ try{
+  await axios.post("/api/signup",{
+email:email.trim(),
+password:pw,
+name:name.trim()||null
+  })
+  router.push(`/login?signup=success&email=${encodeURIComponent(email.trim())}`)
+ } catch(err:any){
+  const msg= axios.isAxiosError(err)
+        ? err.response?.data?.error ?? "가입에 실패했어요."
+        : "네트워크 오류가 발생했어요.";
+      setBanner(msg);
+      setBusy(false);
+ }   
+ 
+    
   }
 
   return (

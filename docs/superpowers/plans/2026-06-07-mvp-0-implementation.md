@@ -4,9 +4,9 @@
 
 **Goal:** 회원가입 → 강아지 등록 → 일일 기록 입력/조회까지 가능한 기본 트래커 1주차 구현.
 
-**Architecture:** Next.js 16 App Router 모놀리스 + Prisma + SQLite (로컬). 백엔드는 Route Handlers + Server Actions. 인증은 NextAuth Credentials. UI는 shadcn/ui + Tailwind.
+**Architecture:** Next.js 16 App Router 모놀리스 + Prisma + Neon Postgres (dev/test/prod 3-branch). 백엔드는 Route Handlers + Server Actions. 인증은 NextAuth Credentials. UI는 shadcn/ui + Tailwind. **Deploy on Day 1: GitHub + Vercel 자동 배포.**
 
-**Tech Stack:** Next.js 16, TypeScript, Prisma, SQLite, NextAuth v5(Auth.js), shadcn/ui, Tailwind, Vitest, react-hook-form, zod, Recharts.
+**Tech Stack:** Next.js 16, TypeScript, Prisma, Neon Postgres, NextAuth v5(Auth.js), shadcn/ui, Tailwind, Vitest, react-hook-form, zod, Recharts, Vercel (배포).
 
 **학습 목표 (백엔드 위주):**
 - Route Handlers와 Server Actions의 차이/사용처
@@ -186,6 +186,68 @@ git commit -m "chore: initialize Next.js project"
 
 ---
 
+### Task 1.5: Hello World Vercel 배포 (Deploy on Day 1)
+
+> **포트폴리오용 핵심 원칙:** 첫날부터 prod URL 확보. 매 push마다 자동 배포되어 매 MVP마다 가시적 산출물 생김.
+
+**Files:** (코드 변경 없음, GitHub + Vercel 설정만)
+
+- [ ] **Step 1: GitHub repo 생성**
+
+GitHub에 새 repo 생성 (이름: `dog-health-tracker`, **public 권장** — 포트폴리오용).
+
+```bash
+git remote add origin https://github.com/<your-username>/dog-health-tracker.git
+git branch -M main
+git push -u origin main
+```
+
+- [ ] **Step 2: Vercel 프로젝트 연결**
+
+1. https://vercel.com 접속 → GitHub 로그인
+2. "Add New Project" → 방금 push한 repo 선택
+3. Framework Preset: Next.js (자동 감지)
+4. Root Directory: `.` (기본값)
+5. Build/Output 설정: 모두 기본값
+6. Environment Variables: 지금은 추가하지 않음 (Task 3에서 DATABASE_URL, Task 9에서 AUTH_SECRET 추가 예정)
+7. "Deploy" 클릭
+
+약 1-2분 대기 후 배포 완료. URL 확인 (예: `dog-health-tracker-xxx.vercel.app`).
+
+- [ ] **Step 3: 배포된 URL에 접속해서 확인**
+
+브라우저에서 Vercel이 준 URL 열어서 Next.js 기본 페이지 보이면 성공.
+
+- [ ] **Step 4: README에 배포 URL 추가**
+
+`README.md` 작성:
+
+```markdown
+# 🐕 DogHealth Tracker
+
+[![Live Demo](https://img.shields.io/badge/live-demo-success)](https://your-url.vercel.app)
+
+지병이 있는 강아지 보호자를 위한 헬스 트래커. 모든 강아지 보호자 사용 가능.
+
+**Live:** https://your-url.vercel.app
+
+(나머지 README는 Task 25에서 작성)
+```
+
+- [ ] **Step 5: 커밋 + push (자동 재배포 확인)**
+
+```bash
+git add README.md
+git commit -m "docs: add live demo URL"
+git push
+```
+
+push 후 1-2분 뒤 Vercel 대시보드에서 새 배포가 자동 생성된 것 확인. 이후 모든 `git push`는 자동 배포 트리거.
+
+> **체크포인트:** 이후 각 Task 끝에 `git push`만 하면 prod 자동 업데이트. 이게 "Deploy on Day 1" 원칙의 진짜 가치.
+
+---
+
 ### Task 2: shadcn/ui 초기화 + 컬러 팔레트 적용
 
 **Files:**
@@ -317,20 +379,43 @@ git commit -m "feat: setup shadcn/ui with Soft Blue + Coral palette"
 
 ---
 
-### Task 3: Prisma + SQLite 셋업
+### Task 3: Prisma + PostgreSQL (Neon) 셋업
+
+> **왜 Neon?** Vercel 배포 즉시 가능 (serverless 호환), 무료 티어 (0.5GB), Branch 기능으로 dev/test/prod 격리 가능, Prisma 공식 지원.
 
 **Files:**
 - Create: `prisma/schema.prisma`, `lib/prisma.ts`, `.env.local`, `.env.example`
 
-- [ ] **Step 1: Prisma 설치**
+- [ ] **Step 1: Neon 가입 + 프로젝트 생성**
+
+1. https://neon.tech 접속 → GitHub로 로그인
+2. "Create Project" 클릭
+   - Project name: `dog-health-tracker`
+   - Postgres version: 16 (최신)
+   - Region: `aws-ap-northeast-1` (도쿄, 한국에서 가장 가까움)
+3. 생성 후 "Connection String" 복사 (예: `postgresql://user:password@ep-xxx.aws-ap-northeast-1.aws.neon.tech/neondb?sslmode=require`)
+
+- [ ] **Step 2: Neon Branch 생성 (dev / test 분리)**
+
+Neon 대시보드 → Branches 탭:
+1. `main` branch는 기본 (= prod용으로 사용)
+2. "Create Branch" → 이름 `dev` (로컬 개발용) 생성 → connection string 복사
+3. "Create Branch" → 이름 `test` (테스트용) 생성 → connection string 복사
+
+→ 총 3개 DB URL 확보:
+- `main` (prod, Vercel용)
+- `dev` (로컬 개발용 = .env.local)
+- `test` (테스트 실행용)
+
+- [ ] **Step 3: Prisma 설치**
 
 ```bash
 npm install prisma @prisma/client
 npm install -D prisma
-npx prisma init --datasource-provider sqlite
+npx prisma init --datasource-provider postgresql
 ```
 
-- [ ] **Step 2: schema.prisma 작성 (MVP 0 모델만)**
+- [ ] **Step 4: schema.prisma 작성 (MVP 0 모델만)**
 
 `prisma/schema.prisma`:
 
@@ -340,7 +425,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -385,12 +470,12 @@ model DailyRecord {
 }
 ```
 
-- [ ] **Step 3: .env.local 설정**
+- [ ] **Step 5: .env.local 설정 (dev branch URL)**
 
-`.env.local` 작성:
+`.env.local` 작성 (Step 2에서 복사한 `dev` branch URL 사용):
 
 ```
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://user:password@ep-xxx.aws-ap-northeast-1.aws.neon.tech/neondb?sslmode=require"
 AUTH_SECRET="run-openssl-rand-base64-32-and-paste-here"
 AUTH_URL="http://localhost:3000"
 ```
@@ -403,15 +488,24 @@ openssl rand -base64 32
 
 `.env.example`도 같은 키만 (값은 placeholder) 작성하고 commit.
 
-- [ ] **Step 4: 마이그레이션 실행**
+- [ ] **Step 6: Vercel에 prod 환경변수 등록 (main branch URL)**
+
+Vercel 대시보드 → 프로젝트 → Settings → Environment Variables:
+- `DATABASE_URL` = Neon **main** branch URL (Step 2에서 복사)
+- `AUTH_SECRET` = `openssl rand -base64 32` (로컬과 다른 새 값 권장)
+- `AUTH_URL` = Vercel이 준 prod URL (예: `https://dog-health-tracker-xxx.vercel.app`)
+
+3개 모두 "Production" + "Preview" + "Development" 다 체크.
+
+- [ ] **Step 7: 마이그레이션 실행 (dev branch)**
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-`prisma/dev.db` 파일 생성 확인.
+Neon dev branch에 테이블 생성됨. Neon 대시보드 → Tables 탭에서 `User`, `Dog`, `DailyRecord` 확인 가능.
 
-- [ ] **Step 5: Prisma 클라이언트 싱글톤 만들기**
+- [ ] **Step 8: Prisma 클라이언트 싱글톤 만들기**
 
 `lib/prisma.ts`:
 
@@ -433,17 +527,20 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 > **왜 싱글톤?** Next.js 개발 모드는 HMR로 모듈을 자주 재로드해서 새 PrismaClient가 계속 생성되면 connection leak이 남. globalThis에 캐싱해서 방지.
 
-- [ ] **Step 6: 검증 + 커밋**
+- [ ] **Step 9: 검증 + 커밋 + push**
 
 ```bash
 npx prisma studio
 ```
-브라우저 열리면 User/Dog/DailyRecord 테이블 보임. 종료 후:
+브라우저 열리면 User/Dog/DailyRecord 테이블 보임 (Neon dev branch). 종료 후:
 
 ```bash
 git add prisma/ lib/prisma.ts .env.example
-git commit -m "feat: setup Prisma with SQLite and base schema (User, Dog, DailyRecord)"
+git commit -m "feat: setup Prisma with Neon Postgres and base schema (User, Dog, DailyRecord)"
+git push
 ```
+
+push 후 Vercel 자동 재배포. **Vercel은 빌드 시 자동으로 `prisma generate` 실행** + main branch DB에 연결 시도. 만약 `migrate deploy`가 안 돼있으면 빌드 후 첫 DB 호출 시 에러가 날 수 있는데, Task 9 (NextAuth)에서 prod 마이그레이션 step을 추가할 거니까 지금은 무시 OK.
 
 ---
 
@@ -544,65 +641,91 @@ git commit -m "chore: setup Vitest test environment"
 
 ---
 
-### Task 5: 테스트용 DB 분리
+### Task 5: 테스트용 DB 분리 (Neon test branch 사용)
 
 **Files:**
 - Modify: `tests/setup.ts`, `package.json`
-- Create: `prisma/.gitignore`
+- Create: `.env.test`
 
-- [ ] **Step 1: 테스트용 DB 환경변수 분리 전략**
+- [ ] **Step 1: 테스트용 환경변수 파일 생성**
 
-테스트 실행 시 `DATABASE_URL=file:./test.db`를 환경변수로 주입.
+`.env.test` 작성 (Task 3 Step 2에서 만든 **test** branch URL 사용):
+
+```
+DATABASE_URL="postgresql://user:password@ep-yyy-test.aws-ap-northeast-1.aws.neon.tech/neondb?sslmode=require"
+```
+
+`.gitignore`에 `.env.test` 라인 있는지 확인 (`.env*.local`만 있으면 `.env.test`도 추가).
+
+- [ ] **Step 2: dotenv-cli 설치 + package.json 스크립트**
+
+```bash
+npm install -D dotenv-cli
+```
 
 `package.json` scripts 수정:
 
 ```json
-"test": "DATABASE_URL=file:./test.db vitest run",
-"test:watch": "DATABASE_URL=file:./test.db vitest",
-"test:ui": "DATABASE_URL=file:./test.db vitest --ui"
+"test": "dotenv -e .env.test -- vitest run",
+"test:watch": "dotenv -e .env.test -- vitest",
+"test:ui": "dotenv -e .env.test -- vitest --ui",
+"db:test:migrate": "dotenv -e .env.test -- prisma migrate deploy"
 ```
 
-- [ ] **Step 2: 테스트 전 마이그레이션 자동 실행**
+- [ ] **Step 3: test branch에 schema 적용**
+
+```bash
+npm run db:test:migrate
+```
+
+Neon test branch에 테이블 생성 확인 (Neon 대시보드 → Branch: test 선택 → Tables).
+
+- [ ] **Step 4: 테스트 cleanup 설정**
 
 `tests/setup.ts` 수정:
 
 ```ts
-import { afterEach, beforeAll } from "vitest";
-import { execSync } from "node:child_process";
+import { afterEach } from "vitest";
 import { prisma } from "@/lib/prisma";
 
-beforeAll(() => {
-  // 테스트 DB 초기화: 마이그레이션 + 클린
-  execSync("DATABASE_URL=file:./test.db npx prisma migrate deploy", { stdio: "ignore" });
-});
-
 afterEach(async () => {
+  // 테스트 격리: 각 테스트 후 데이터 클리어 (FK 순서 주의)
   await prisma.dailyRecord.deleteMany();
   await prisma.dog.deleteMany();
   await prisma.user.deleteMany();
 });
 ```
 
-- [ ] **Step 3: prisma/.gitignore 작성**
+> **왜 dropAll이 아니라 deleteMany?** Postgres에서 truncate cascade도 가능하지만, Prisma는 raw query 없이 안 됨. deleteMany가 가장 간단 + 안전.
 
-```
-*.db
-*.db-journal
-```
-
-- [ ] **Step 4: 동작 확인**
+- [ ] **Step 5: 동작 확인**
 
 ```bash
 npm test
 ```
-`prisma/test.db` 생성되고 PASS (테스트가 없으면 No tests found도 OK).
+연결 + 클린업 PASS (테스트가 없으면 No tests found OK).
 
-- [ ] **Step 5: 커밋**
+- [ ] **Step 6: 커밋 + push**
 
 ```bash
-git add tests/setup.ts package.json prisma/.gitignore
-git commit -m "chore: separate test database from dev"
+git add tests/setup.ts package.json package-lock.json .gitignore
+git commit -m "chore: separate test database using Neon test branch"
+git push
 ```
+
+---
+
+### Phase 1 완료 체크포인트 ✅
+
+다음을 모두 확인:
+- [ ] `npm run dev` → 로컬 페이지 정상
+- [ ] Vercel prod URL → 같은 페이지 정상
+- [ ] `npm test` → PASS (No tests found OK)
+- [ ] `npx prisma studio` → User/Dog/DailyRecord 테이블 보임
+- [ ] Neon 대시보드 → main/dev/test 3개 branch 모두 동일 schema
+- [ ] git history 5개 commit (init, shadcn, prisma, vitest, test-db)
+
+문제 있으면 다음 Phase 진입 전에 해결.
 
 ---
 
@@ -1330,12 +1453,35 @@ export const config = {
 - 로그아웃 상태로 `/` 접속 → `/login` 리다이렉트 확인
 - 로그인 상태로 `/login` 접속 → `/` 리다이렉트 확인
 
-- [ ] **Step 3: 커밋**
+- [ ] **Step 3: 커밋 + push**
 
 ```bash
 git add middleware.ts
 git commit -m "feat: protect routes with auth middleware"
+git push
 ```
+
+---
+
+### Phase 2 완료 체크포인트 ✅ — prod 배포 검증
+
+- [ ] **Vercel prod에서 prod DB(main branch) 마이그레이션 1회 실행**
+
+로컬에서:
+```bash
+DATABASE_URL="<Neon main branch URL>" npx prisma migrate deploy
+```
+또는 Neon SQL editor에서 dev branch의 schema를 main으로 복제.
+
+> 💡 자동화 옵션: `package.json`에 `"postinstall": "prisma generate"`만 두고, 마이그레이션은 수동 (안전). MVP 4에서 CI 파이프라인으로 자동화 학습.
+
+- [ ] **Vercel prod URL에서 실제 동작 확인**
+  - `/signup` → 가입
+  - `/login` → 로그인
+  - `/` → 보호 라우트 정상 동작
+  - Neon main branch에 User 레코드 생성됐는지 확인
+
+prod에서 동작해야 다음 Phase 진입.
 
 ---
 
@@ -1935,7 +2081,16 @@ export default async function DogDetailPage({ params }: { params: Promise<{ id: 
 ```bash
 git add app/\(app\)/dogs/\[id\]/page.tsx components/dog/dog-card.tsx
 git commit -m "feat: add dog detail page with basic info"
+git push
 ```
+
+---
+
+### Phase 3 완료 체크포인트 ✅
+
+- [ ] Vercel prod URL에서 강아지 등록 흐름 동작
+- [ ] Neon main branch의 Dog 테이블에 레코드 생성 확인
+- [ ] 다른 사용자 강아지 URL 접속 시 404 (권한 분리 검증)
 
 ---
 
@@ -2685,7 +2840,16 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
 ```bash
 git add app/\(app\)/dogs/\[id\]/records/\[recordId\] components/record/record-edit-form.tsx components/record/delete-record-button.tsx
 git commit -m "feat: add record edit and delete page"
+git push
 ```
+
+---
+
+### Phase 4 완료 체크포인트 ✅
+
+- [ ] Vercel prod에서 일일 기록 입력/수정/삭제 모두 동작
+- [ ] Neon main branch의 DailyRecord 테이블 확인
+- [ ] 다른 사용자 record URL 접속 시 404
 
 ---
 
@@ -2929,7 +3093,15 @@ const stats = await weeklyStats(id, session.user.id);
 ```bash
 git add components/dashboard/weekly-chart.tsx lib/services/stats.service.ts app/\(app\)/dogs/\[id\]/page.tsx package.json package-lock.json
 git commit -m "feat: add weekly stats charts to dog detail"
+git push
 ```
+
+---
+
+### Phase 5 완료 체크포인트 ✅
+
+- [ ] Vercel prod에서 대시보드 + 차트 정상 렌더링
+- [ ] 모바일 viewport에서 차트 깨짐 없음
 
 ---
 
@@ -3164,9 +3336,9 @@ git commit -m "feat: add demo seed script"
 **Files:**
 - Create: `docs/learning/MVP-0-RETRO.md`
 
-- [ ] **Step 1: 체크리스트**
+- [ ] **Step 1: 로컬 체크리스트**
 
-다음을 직접 모두 확인:
+다음을 로컬(`npm run dev`)에서 모두 확인:
 
 - [ ] `/signup` — 빈 폼/잘못된 이메일/짧은 비밀번호 검증 표시
 - [ ] `/signup` — 정상 가입 → `/login?signup=success`로 이동
@@ -3181,6 +3353,19 @@ git commit -m "feat: add demo seed script"
 - [ ] 다른 사용자로 가입 후 첫 사용자의 강아지 URL 직접 접속 → 404
 - [ ] 모바일 뷰포트(devtools)에서 레이아웃 깨짐 없음
 - [ ] `npm test` — 모든 테스트 통과
+
+- [ ] **Step 1.5: Prod 체크리스트 (Vercel)**
+
+위 12개 항목을 **prod URL에서도 모두 동일하게** 확인. prod에서 안 되면 그게 진짜 버그. (보통 환경변수, 마이그레이션 누락, CORS 이슈 등)
+
+prod 마이그레이션이 안 돼있으면:
+```bash
+DATABASE_URL="<Neon main branch URL>" npx prisma migrate deploy
+```
+
+- [ ] **Step 1.6: (옵션) 커스텀 도메인 연결**
+
+Vercel → 프로젝트 → Settings → Domains에서 본인 도메인 연결 가능 (없으면 vercel.app subdomain 그대로 OK).
 
 - [ ] **Step 2: 회고 작성**
 

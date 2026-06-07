@@ -490,7 +490,7 @@ model SnackAnalysis {
 | 백엔드 (MVP 0-3) | Next.js Route Handlers + Server Actions | 학습 곡선 완만 |
 | 백엔드 (MVP 4) | NestJS 11 + TypeScript | 한국 채용 시장 핵심 스택 |
 | ORM | Prisma | 타입 안정성, 마이그레이션 편의 |
-| DB | SQLite → PostgreSQL (Neon) | 학습→배포 단계 마이그레이션 경험 |
+| DB | **PostgreSQL (Neon)** 처음부터 | 로컬=prod 환경 일치, 즉시 Vercel 배포 가능 |
 | 인증 | NextAuth (MVP 0-3) → JWT (MVP 4) | 단계적 학습 |
 | 파일 스토리지 | Cloudinary | 무료 티어 + 이미지 변환 |
 | AI | OpenAI GPT-4o Vision | 비전 분석 + 구조화 출력 |

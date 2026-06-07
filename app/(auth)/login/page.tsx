@@ -2,14 +2,13 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useApp } from "@/app/providers";
+import { signIn } from "next-auth/react";
 import { BrandLogo } from "@/components/brand";
 import { Btn, Field, TextInput } from "@/components/ui";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const { login } = useApp();
   const showSuccess = params.get("signup") === "success";
   const [email, setEmail] = useState(params.get("email") || "");
   const [pw, setPw] = useState("");
@@ -17,7 +16,7 @@ function LoginForm() {
   const [banner, setBanner] = useState("");
   const [busy, setBusy] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const next: typeof err = {};
     if (!email.trim()) next.email = "이메일을 입력해주세요";
@@ -26,16 +25,19 @@ function LoginForm() {
     setBanner("");
     if (Object.keys(next).length) return;
     setBusy(true);
-    setTimeout(() => {
-      // ⚠️ mock 인증: 아무 이메일 + 6자 비번이면 통과 (pw "wrong" 또는 @없는 이메일은 실패)
-      if (!email.includes("@") || pw === "wrong") {
-        setBusy(false);
-        setBanner("이메일 또는 비밀번호가 올바르지 않습니다");
-        return;
-      }
-      login(email.trim());
-      router.push("/");
-    }, 800);
+    // NextAuth Credentials authorize 실행 (서버에서 이메일 조회 + verifyPassword)
+    const res = await signIn("credentials", {
+      email: email.trim(),
+      password: pw,
+      redirect: false,
+    });
+    if (res?.error) {
+      setBusy(false);
+      setBanner("이메일 또는 비밀번호가 올바르지 않습니다");
+      return;
+    }
+    router.push("/");
+    router.refresh();
   }
 
   return (

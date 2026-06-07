@@ -3,17 +3,16 @@
 /* 56px 공통 헤더 — 좌: 브랜드 락업(대시보드로), 우: 로그아웃. */
 
 import { useRouter } from "next/navigation";
-import { useApp } from "@/app/providers";
+import { signOut } from "next-auth/react";
 import { BrandLogo } from "./brand";
 import { Btn } from "./ui";
 
 export function Header() {
   const router = useRouter();
-  const { logout } = useApp();
 
   function handleLogout() {
-    logout();
-    router.replace("/login");
+    // NextAuth 세션 종료 후 로그인 화면으로
+    signOut({ callbackUrl: "/login" });
   }
 
   return (

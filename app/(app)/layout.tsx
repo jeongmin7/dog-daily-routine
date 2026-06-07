@@ -1,20 +1,11 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useApp } from "@/app/providers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { Header } from "@/components/header";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { authed, authReady } = useApp();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (authReady && !authed) router.replace("/login");
-  }, [authReady, authed, router]);
-
-  // 인증 확인 전 / 미인증이면 화면 비움 (리다이렉트 대기)
-  if (!authReady || !authed) return null;
+// 서버 컴포넌트: 매 요청마다 NextAuth 세션을 확인하는 진짜 가드.
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (!session) redirect("/login");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>

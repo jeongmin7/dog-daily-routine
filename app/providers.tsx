@@ -53,14 +53,14 @@ export function AppProvider({
   children: React.ReactNode;
   initialUser: SessionUser | null;
 }) {
-  const [store, setStore] = useState<Store>(buildSeed);
+  const [store, setStore] = useState<Store>(() => withSessionUser(buildSeed(), initialUser));
   const [hydrated, setHydrated] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
   // 마운트 시 localStorage에서 로드 (SSR 불일치 방지)
   useEffect(() => {
-    setStore(loadStore());
+    setStore(withSessionUser(loadStore(), initialUser));
     setHydrated(true);
     try {
       setAuthed(sessionStorage.getItem(AUTH_KEY) === "1");

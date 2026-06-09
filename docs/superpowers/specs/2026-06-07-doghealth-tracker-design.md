@@ -503,11 +503,13 @@ model SnackAnalysis {
 
 ## 7.5 디자인 시스템
 
-shadcn/ui + Tailwind 기반. 컬러 팔레트는 "Soft Blue + Coral" — 의료 신뢰감(블루) + 친근함(코랄).
+> **브랜딩 업데이트 (2026-06-07, Claude Design 핸드오프 반영):** 브랜드명은 **"하루"**("우리 아이의 하루"), 로고는 **박스 없는 발바닥 라인 심볼 + 워드마크 락업**(파란 사각형 배지 ❌), primary는 **스카이블루 `#2E92D6`**. 아래 표의 `--primary`도 이에 맞춰 갱신함. 디자인 원본(HTML/CSS 프로토타입 + 채팅 로그)은 Claude Design에서 export한 핸드오프 번들 기준이며, UI 구현 시 이 시안을 픽셀 단위로 재현한다.
+
+shadcn/ui(New York) + Tailwind를 컴포넌트 베이스로 유지하고, 그 위에 아래 "하루" 디자인 토큰을 입힌다. 컬러 팔레트는 "Sky Blue + Coral" — 의료 신뢰감(블루) + 친근함(코랄).
 
 | 토큰 | Light Hex | 용도 |
 |-----|----------|------|
-| `--primary` | `#4B7BAD` | 메인 액션 버튼, 링크, 포커스 |
+| `--primary` | `#2E92D6` | 메인 액션 버튼, 링크, 포커스 |
 | `--secondary` | `#EEF3F8` | 보조 배경, 구분선 |
 | `--accent` | `#FF7A6E` | 강조 포인트, 알림 뱃지 |
 | `--foreground` | `#1F2A3A` | 본문 텍스트 |

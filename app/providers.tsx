@@ -3,7 +3,18 @@
 /* 앱 전역 상태: mock 스토어 + 인증.
    ⚠️ 임시 — 백엔드 연결 시 이 컨텍스트의 액션들을 실제 API/세션으로 교체. */
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+type SessionUser = {
+  name?: string | null;
+  email?: string | null;
+};
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import type { Dog, DogRecord, RecordInput, Store } from "@/lib/types";
 import { buildSeed, loadStore, saveStore, uid } from "@/lib/mock-store";
 
@@ -24,7 +35,24 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 const AUTH_KEY = "haru.auth";
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
+function withSessionUser(s: Store, u: SessionUser | null): Store {
+  if (!u) return s;
+  return {
+    ...s,
+    user: {
+      ...s.user,
+      name: u.name ?? s.user.name,
+      email: u.email ?? s.user.email,
+    },
+  };
+}
+export function AppProvider({
+  children,
+  initialUser,
+}: {
+  children: React.ReactNode;
+  initialUser: SessionUser | null;
+}) {
   const [store, setStore] = useState<Store>(buildSeed);
   const [hydrated, setHydrated] = useState(false);
   const [authed, setAuthed] = useState(false);
@@ -73,13 +101,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addRecord = useCallback((dogId: string, rec: RecordInput) => {
-    setStore((s) => ({ ...s, records: [...s.records, { id: uid(), dogId, ...rec } as DogRecord] }));
+    setStore((s) => ({
+      ...s,
+      records: [...s.records, { id: uid(), dogId, ...rec } as DogRecord],
+    }));
   }, []);
 
   const updateRecord = useCallback((id: string, rec: RecordInput) => {
     setStore((s) => ({
       ...s,
-      records: s.records.map((r) => (r.id === id ? { ...r, ...rec, id, dogId: r.dogId } : r)),
+      records: s.records.map((r) =>
+        r.id === id ? { ...r, ...rec, id, dogId: r.dogId } : r,
+      ),
     }));
   }, []);
 
@@ -93,7 +126,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider
-      value={{ store, authed, authReady, login, logout, addDog, addRecord, updateRecord, deleteRecord, resetData }}
+      value={{
+        store,
+        authed,
+        authReady,
+        login,
+        logout,
+        addDog,
+        addRecord,
+        updateRecord,
+        deleteRecord,
+        resetData,
+      }}
     >
       {children}
     </AppContext.Provider>

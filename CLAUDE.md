@@ -31,11 +31,21 @@
 - Prisma 스키마 3모델 `User ─< Dog ─< DogRecord`(관계 + `onDelete: Cascade`), Neon에 마이그레이션 완료.
 - **회원가입**: `POST /api/signup` → bcrypt 해시 + `prisma.user.create` → DB 저장 (동작 확인).
 - **로그인**: NextAuth Credentials(`lib/auth.ts`) + `verifyPassword`. 폼 `signIn` 연결, 가드는 `app/(app)/layout.tsx`의 서버 `auth()`, 헤더 `signOut`.
+- **회원정보 표시**: 루트 `layout.tsx`에서 `auth()` → `AppProvider initialUser` → `providers.tsx`의 `withSessionUser`로 store.user에 주입. 대시보드 인사말이 실제 이름으로 표시.
+- **탈퇴하기**: `DELETE /api/account` — 세션 user.id로 `prisma.user.delete`(클라 입력 신뢰 X), `onDelete: Cascade`로 강아지·기록 연쇄 삭제. UI는 `app/(app)/settings` + `components/settings-client.tsx`(2단계 확인 → fetch → `signOut`).
+- **배포**: Vercel `dog-daily-routine` 프로젝트(중복 2개 정리 완료), production = `main` 브랜치. `turbopack.root` 고정(떠도는 lockfile로 루트 오인 → 패닉 해결). git-flow: `feat/* → develop → main`(PR). 모든 기능 production 반영됨.
 
-**다음**
-- 회원정보 표시 (대시보드 인사말 mock "하루맘" → 세션의 진짜 user로).
-- 탈퇴하기 (DELETE + `onDelete: Cascade` 활용).
-- dogs/records를 mock → 실제 Prisma API로 교체.
+**다음 — dogs/records를 mock(localStorage) → 실제 Prisma API로 교체 (= 1단계 마무리)**
+> ⭐ 관통 원칙: **모든 엔드포인트는 세션 `user.id`로 스코프** (`where: { userId }`). 남의 강아지/기록 접근 차단. 탈퇴 API에서 쓴 패턴 그대로.
+> 격리: `app/providers.tsx`의 mock 액션 내부만 fetch로 교체 → UI 코드(`useApp()`)는 유지.
+- ① `GET /api/dogs` (내 강아지 목록) ← **여기서 시작. 핵심 패턴 학습**
+- ② `POST /api/dogs` (생성)
+- ③ `GET /api/dogs/[id]` (상세, 소유 확인)
+- ④ 기록 `GET`+`POST`
+- ⑤ 기록 `PATCH`+`DELETE`
+- ⑥ `DELETE /api/dogs` (cascade)
+- 각 단계 후 `providers.tsx` 연결
+- 첫 마디 트리거: "강아지 API 시작 — `GET /api/dogs`부터"
 
 ## 5. 아키텍처 / 규칙
 - **데이터**: `lib/prisma.ts`(싱글톤) → Neon. UI의 mock 의존부는 `app/providers.tsx`만 바꾸면 실제 API로 교체되게 격리.

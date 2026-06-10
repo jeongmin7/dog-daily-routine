@@ -34,18 +34,20 @@
 - **회원정보 표시**: 루트 `layout.tsx`에서 `auth()` → `AppProvider initialUser` → `providers.tsx`의 `withSessionUser`로 store.user에 주입. 대시보드 인사말이 실제 이름으로 표시.
 - **탈퇴하기**: `DELETE /api/account` — 세션 user.id로 `prisma.user.delete`(클라 입력 신뢰 X), `onDelete: Cascade`로 강아지·기록 연쇄 삭제. UI는 `app/(app)/settings` + `components/settings-client.tsx`(2단계 확인 → fetch → `signOut`).
 - **배포**: Vercel `dog-daily-routine` 프로젝트(중복 2개 정리 완료), production = `main` 브랜치. `turbopack.root` 고정(떠도는 lockfile로 루트 오인 → 패닉 해결). git-flow: `feat/* → develop → main`(PR). 모든 기능 production 반영됨.
+- **dogs API (① ② ③) + UI 연결** (2026-06-10 완료, production 반영):
+  - `GET /api/dogs` 목록(`where: { userId }`) · `POST /api/dogs` 생성(body 400 검증 + `userId`는 세션 주입) · `GET /api/dogs/[id]` 단건(`findFirst where: { id, userId }` → 못 찾거나 남의 것이면 404).
+  - 동적 라우트 시그니처는 Next 16 기준 `{ params }: { params: Promise<{ id }> }` + `await params`.
+  - UI 연결: `providers.tsx`가 마운트 시 `GET /api/dogs`로 목록 로드(mock 시드 덮어씀, 고아 기록 필터), `addDog`는 `axios.post('/api/dogs')` 비동기로. **클라 HTTP는 axios 컨벤션**(signup과 동일). records는 아직 mock(④ 전 의도된 하이브리드).
 
-**다음 — dogs/records를 mock(localStorage) → 실제 Prisma API로 교체 (= 1단계 마무리)**
-> ⭐ 관통 원칙: **모든 엔드포인트는 세션 `user.id`로 스코프** (`where: { userId }`). 남의 강아지/기록 접근 차단. 탈퇴 API에서 쓴 패턴 그대로.
-> 격리: `app/providers.tsx`의 mock 액션 내부만 fetch로 교체 → UI 코드(`useApp()`)는 유지.
-- ① `GET /api/dogs` (내 강아지 목록) ← **여기서 시작. 핵심 패턴 학습**
-- ② `POST /api/dogs` (생성)
-- ③ `GET /api/dogs/[id]` (상세, 소유 확인)
-- ④ 기록 `GET`+`POST`
-- ⑤ 기록 `PATCH`+`DELETE`
+**다음 — 기록(records) API + DELETE (= 1단계 마무리)**
+> ⭐ 관통 원칙: **모든 엔드포인트는 세션 `user.id`로 스코프** (`where: { userId }`). 남의 강아지/기록 접근 차단. 탈퇴·dogs API에서 쓴 패턴 그대로.
+> 격리: `app/providers.tsx`의 mock 액션 내부만 axios로 교체 → UI 코드(`useApp()`)는 유지.
+- ✅ ① `GET /api/dogs` · ✅ ② `POST /api/dogs` · ✅ ③ `GET /api/dogs/[id]`
+- ④ 기록 `GET`+`POST` ← **여기서 시작.** 새 개념: 중첩 소유 확인(기록 건드리기 전 강아지가 내 것인지 먼저 검증)
+- ⑤ 기록 `PATCH`+`DELETE` (부분 수정 + 2단계 소유)
 - ⑥ `DELETE /api/dogs` (cascade)
-- 각 단계 후 `providers.tsx` 연결
-- 첫 마디 트리거: "강아지 API 시작 — `GET /api/dogs`부터"
+- 각 단계 후 `providers.tsx` 연결 (records의 addRecord/updateRecord/deleteRecord → axios)
+- 첫 마디 트리거: "기록 API 시작 — `④`부터"
 
 ## 5. 아키텍처 / 규칙
 - **데이터**: `lib/prisma.ts`(싱글톤) → Neon. UI의 mock 의존부는 `app/providers.tsx`만 바꾸면 실제 API로 교체되게 격리.

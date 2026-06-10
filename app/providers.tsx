@@ -15,6 +15,7 @@ import {
   useState,
   useCallback,
 } from "react";
+import axios from "axios";
 import type { Dog, DogRecord, RecordInput, Store } from "@/lib/types";
 import { buildSeed, loadStore, saveStore, uid } from "@/lib/mock-store";
 
@@ -24,7 +25,7 @@ type AppContextValue = {
   authReady: boolean;
   login: (email: string) => void;
   logout: () => void;
-  addDog: (dog: Omit<Dog, "id">) => Dog;
+  addDog: (dog: Omit<Dog, "id">) => Promise<Dog>;
   addRecord: (dogId: string, rec: RecordInput) => void;
   updateRecord: (id: string, rec: RecordInput) => void;
   deleteRecord: (id: string) => void;
@@ -58,7 +59,7 @@ export function AppProvider({
   const [authed, setAuthed] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
-  // 마운트 시 localStorage에서 로드 (SSR 불일치 방지)
+  // 마운트: 세션·기록은 localStorage(mock)에서, 강아지는 실제 API(GET /api/dogs)에서.
   useEffect(() => {
     setStore(withSessionUser(loadStore(), initialUser));
     setHydrated(true);
@@ -68,6 +69,23 @@ export function AppProvider({
       /* ignore */
     }
     setAuthReady(true);
+
+    // 강아지 목록을 DB에서 가져와 mock 시드를 덮어쓴다.
+    // 기록(records)은 아직 mock이라, 주인이 사라진 고아 기록은 걸러낸다.
+    axios
+      .get("/api/dogs")
+      .then((res) => {
+        const dogs: Dog[] = res.data?.data ?? [];
+        const ids = new Set(dogs.map((d) => d.id));
+        setStore((s) => ({
+          ...s,
+          dogs,
+          records: s.records.filter((r) => ids.has(r.dogId)),
+        }));
+      })
+      .catch(() => {
+        /* 네트워크 오류 시 기존(빈) 목록 유지 */
+      });
   }, []);
 
   // 변경 시 영속화
@@ -94,8 +112,9 @@ export function AppProvider({
     setAuthed(false);
   }, []);
 
-  const addDog = useCallback((dog: Omit<Dog, "id">) => {
-    const created: Dog = { id: uid(), ...dog };
+  const addDog = useCallback(async (dog: Omit<Dog, "id">): Promise<Dog> => {
+    const res = await axios.post("/api/dogs", dog);
+    const created = res.data.data as Dog;
     setStore((s) => ({ ...s, dogs: [...s.dogs, created] }));
     return created;
   }, []);

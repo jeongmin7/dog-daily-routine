@@ -17,7 +17,7 @@ export default function DogNewPage() {
   const [err, setErr] = useState<{ name?: string; birth?: string; weight?: string }>({});
   const [busy, setBusy] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const next: typeof err = {};
     if (!name.trim()) next.name = "이름은 필수입니다";
@@ -26,15 +26,18 @@ export default function DogNewPage() {
     setErr(next);
     if (Object.keys(next).length) return;
     setBusy(true);
-    setTimeout(() => {
-      const dog = addDog({
+    try {
+      const dog = await addDog({
         name: name.trim(),
         breed: breed.trim() || undefined,
         birthdate: birth || undefined,
         weight: weight !== "" ? Number(weight) : undefined,
       });
       router.push(`/dogs/${dog.id}`);
-    }, 600);
+    } catch {
+      setBusy(false);
+      setErr({ name: "등록 중 오류가 발생했어요. 다시 시도해주세요." });
+    }
   }
 
   return (

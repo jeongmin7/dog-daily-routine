@@ -37,17 +37,19 @@
 - **dogs API (① ② ③) + UI 연결** (2026-06-10 완료, production 반영):
   - `GET /api/dogs` 목록(`where: { userId }`) · `POST /api/dogs` 생성(body 400 검증 + `userId`는 세션 주입) · `GET /api/dogs/[id]` 단건(`findFirst where: { id, userId }` → 못 찾거나 남의 것이면 404).
   - 동적 라우트 시그니처는 Next 16 기준 `{ params }: { params: Promise<{ id }> }` + `await params`.
-  - UI 연결: `providers.tsx`가 마운트 시 `GET /api/dogs`로 목록 로드(mock 시드 덮어씀, 고아 기록 필터), `addDog`는 `axios.post('/api/dogs')` 비동기로. **클라 HTTP는 axios 컨벤션**(signup과 동일). records는 아직 mock(④ 전 의도된 하이브리드).
+  - UI 연결: `providers.tsx`가 마운트 시 `GET /api/dogs`로 목록 로드, `addDog`는 `axios.post('/api/dogs')` 비동기로. **클라 HTTP는 axios 컨벤션**(signup과 동일).
+- **기록(records) API ④ + UI 연결** (2026-06-11 완료, production 반영):
+  - `GET /api/dogs/[id]/records` 목록 · `POST /api/dogs/[id]/records` 생성 — 둘 다 **중첩 소유 확인**(강아지 `findFirst where { id, userId }` 통과 후에만 기록 접근). `dogId`는 body 아닌 검증된 `dog.id`, `date` 필수(400), 잘못된 JSON body(400).
+  - UI: `providers.tsx` 마운트 시 강아지별 `GET .../records` 병렬 로드 → `store.records`, `addRecord`는 `axios.post`. `record-form` 저장 핸들러는 await 기반(실패 시 busy 해제+알림). **기록 수정·삭제는 여전히 mock**(⑤ 전 의도된 하이브리드 — production에서 기록 수정/삭제는 새로고침하면 되돌아옴).
 
-**다음 — 기록(records) API + DELETE (= 1단계 마무리)**
+**다음 — 기록 PATCH/DELETE + dogs DELETE (= 1단계 마무리)**
 > ⭐ 관통 원칙: **모든 엔드포인트는 세션 `user.id`로 스코프** (`where: { userId }`). 남의 강아지/기록 접근 차단. 탈퇴·dogs API에서 쓴 패턴 그대로.
 > 격리: `app/providers.tsx`의 mock 액션 내부만 axios로 교체 → UI 코드(`useApp()`)는 유지.
-- ✅ ① `GET /api/dogs` · ✅ ② `POST /api/dogs` · ✅ ③ `GET /api/dogs/[id]`
-- ④ 기록 `GET`+`POST` ← **여기서 시작.** 새 개념: 중첩 소유 확인(기록 건드리기 전 강아지가 내 것인지 먼저 검증)
-- ⑤ 기록 `PATCH`+`DELETE` (부분 수정 + 2단계 소유)
-- ⑥ `DELETE /api/dogs` (cascade)
-- 각 단계 후 `providers.tsx` 연결 (records의 addRecord/updateRecord/deleteRecord → axios)
-- 첫 마디 트리거: "기록 API 시작 — `④`부터"
+- ✅ ① `GET /api/dogs` · ✅ ② `POST /api/dogs` · ✅ ③ `GET /api/dogs/[id]` · ✅ ④ 기록 `GET`+`POST`(+UI 연결)
+- ⑤ 기록 `PATCH`+`DELETE` ← **여기서 시작.** 새 개념: 부분 수정 + 2단계 소유(기록 → 그 기록의 강아지 → 내 것인지). 새 라우트 `app/api/dogs/[id]/records/[recordId]/route.ts`.
+- ⑥ `DELETE /api/dogs/[id]` (cascade — 강아지 삭제 시 기록 연쇄 삭제)
+- 각 단계 후 `providers.tsx` 연결 (records의 updateRecord/deleteRecord → axios)
+- 첫 마디 트리거: "기록 API ⑤ 시작"
 
 ## 5. 아키텍처 / 규칙
 - **데이터**: `lib/prisma.ts`(싱글톤) → Neon. UI의 mock 의존부는 `app/providers.tsx`만 바꾸면 실제 API로 교체되게 격리.

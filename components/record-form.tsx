@@ -54,7 +54,7 @@ export function RecordForm({
   mode: "new" | "edit";
   dog: Dog;
   record?: DogRecord;
-  onSave: (rec: RecordInput) => void;
+  onSave: (rec: RecordInput) => void | Promise<void>;
   onDelete?: () => void;
   onCancel: () => void;
 }) {
@@ -64,9 +64,14 @@ export function RecordForm({
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setV((s) => ({ ...s, [k]: e.target.value }));
 
-  function doSave() {
+  async function doSave() {
     setBusy(true);
-    setTimeout(() => onSave(build(v)), 600);
+    try {
+      await onSave(build(v));
+    } catch {
+      setBusy(false);
+      window.alert("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
   }
 
   function doDelete() {

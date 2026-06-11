@@ -28,8 +28,8 @@ export default function RecordNewPage({ params }: { params: Promise<{ id: string
       mode="new"
       dog={dog}
       onCancel={() => router.push(`/dogs/${id}`)}
-      onSave={(rec) => {
-        addRecord(id, rec);
+      onSave={async (rec) => {
+        await addRecord(id, rec);
         router.push(`/dogs/${id}`);
       }}
     />

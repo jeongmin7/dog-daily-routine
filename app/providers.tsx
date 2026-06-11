@@ -17,7 +17,7 @@ import {
 } from "react";
 import axios from "axios";
 import type { Dog, DogRecord, RecordInput, Store } from "@/lib/types";
-import { buildSeed, loadStore, saveStore, uid } from "@/lib/mock-store";
+import { buildSeed, loadStore, saveStore } from "@/lib/mock-store";
 
 type AppContextValue = {
   store: Store;
@@ -26,7 +26,7 @@ type AppContextValue = {
   login: (email: string) => void;
   logout: () => void;
   addDog: (dog: Omit<Dog, "id">) => Promise<Dog>;
-  addRecord: (dogId: string, rec: RecordInput) => void;
+  addRecord: (dogId: string, rec: RecordInput) => Promise<DogRecord>;
   updateRecord: (id: string, rec: RecordInput) => void;
   deleteRecord: (id: string) => void;
   resetData: () => void;
@@ -70,18 +70,22 @@ export function AppProvider({
     }
     setAuthReady(true);
 
-    // 강아지 목록을 DB에서 가져와 mock 시드를 덮어쓴다.
-    // 기록(records)은 아직 mock이라, 주인이 사라진 고아 기록은 걸러낸다.
+    // 강아지 목록을 DB에서 가져온 뒤, 각 강아지의 기록을 병렬로 가져와
+    // mock 시드를 실제 데이터로 덮어쓴다. (updateRecord/deleteRecord는 아직 mock)
     axios
       .get("/api/dogs")
-      .then((res) => {
+      .then(async (res) => {
         const dogs: Dog[] = res.data?.data ?? [];
-        const ids = new Set(dogs.map((d) => d.id));
-        setStore((s) => ({
-          ...s,
-          dogs,
-          records: s.records.filter((r) => ids.has(r.dogId)),
-        }));
+        const recordsByDog = await Promise.all(
+          dogs.map((d) =>
+            axios
+              .get(`/api/dogs/${d.id}/records`)
+              .then((r) => (r.data?.data ?? []) as DogRecord[])
+              .catch(() => [] as DogRecord[]),
+          ),
+        );
+        const records = recordsByDog.flat();
+        setStore((s) => ({ ...s, dogs, records }));
       })
       .catch(() => {
         /* 네트워크 오류 시 기존(빈) 목록 유지 */
@@ -119,12 +123,15 @@ export function AppProvider({
     return created;
   }, []);
 
-  const addRecord = useCallback((dogId: string, rec: RecordInput) => {
-    setStore((s) => ({
-      ...s,
-      records: [...s.records, { id: uid(), dogId, ...rec } as DogRecord],
-    }));
-  }, []);
+  const addRecord = useCallback(
+    async (dogId: string, rec: RecordInput): Promise<DogRecord> => {
+      const res = await axios.post(`/api/dogs/${dogId}/records`, rec);
+      const created = res.data.data as DogRecord;
+      setStore((s) => ({ ...s, records: [...s.records, created] }));
+      return created;
+    },
+    [],
+  );
 
   const updateRecord = useCallback((id: string, rec: RecordInput) => {
     setStore((s) => ({

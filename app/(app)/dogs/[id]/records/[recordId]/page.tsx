@@ -30,12 +30,12 @@ export default function RecordEditPage({ params }: { params: Promise<{ id: strin
       dog={dog}
       record={record}
       onCancel={() => router.push(`/dogs/${id}`)}
-      onSave={(rec) => {
-        updateRecord(recordId, rec);
+      onSave={async (rec) => {
+        await updateRecord(recordId, rec);
         router.push(`/dogs/${id}`);
       }}
-      onDelete={() => {
-        deleteRecord(recordId);
+      onDelete={async () => {
+        await deleteRecord(recordId);
         router.push(`/dogs/${id}`);
       }}
     />

@@ -50,10 +50,14 @@
   - UI: `providers.tsx`에 `deleteDog(id)` 추가(`axios.delete` 후 store에서 강아지 + 해당 강아지 기록 제거 = cascade와 화면 동기). `dogs/[id]/page.tsx` 하단 "위험 구역" 카드 — settings 탈퇴와 동일한 2단계 확인 패턴. 브랜치 `feat/dogs-delete`(API+UI 한 브랜치, CLI로 develop·main 직접 머지).
   - ⭐ **1단계(기본 CRUD ①~⑥) 완료.**
 
-**다음 — 2단계 (미정)**
+**다음 — MVP 0 마무리 (⚠️ 기본 CRUD ①~⑥은 끝났지만 MVP 0 자체는 아직)**
 > ⭐ 관통 원칙(앞으로도 유지): **모든 엔드포인트는 세션 `user.id`로 스코프** (`where: { userId }`). 남의 강아지/기록 접근 차단.
-- ✅ 1단계 기본 CRUD 전부 완료: ① `GET /api/dogs` · ② `POST /api/dogs` · ③ `GET /api/dogs/[id]` · ④ 기록 `GET`+`POST` · ⑤ 기록 `PATCH`+`DELETE` · ⑥ `DELETE /api/dogs/[id]` (모두 +UI, production 반영).
-- 2단계 후보(미정): 인증 API Bearer 토큰 분리(AGENTS.md), 주간 통계 백엔드화, soft delete(`Dog.archivedAt`로 "추억 보관"). `docs/superpowers/plans` 참고해 다음 세션에 결정.
+- ✅ 기본 CRUD ①~⑥ 완료(모두 +UI, production): ① `GET /api/dogs` · ② `POST /api/dogs` · ③ `GET /api/dogs/[id]` · ④ 기록 `GET`+`POST` · ⑤ 기록 `PATCH`+`DELETE` · ⑥ `DELETE /api/dogs/[id]`. **단 이게 곧 MVP 0 완료는 아님** — 아래 ⓐⓑ가 남음.
+- ⓐ **주간 통계 백엔드화 ← 내일 여기서 시작.** 지금 차트(`components/stat-chart.tsx`의 `WeeklyStats`)는 **클라에서** `store.records`로 계산(`dogs/[id]/page.tsx`). → 집계 엔드포인트(예: `GET /api/dogs/[id]/stats`) 만들고 차트의 클라 계산 제거. 기존 소유확인 패턴(`findFirst where {id,userId}`) 재사용 + 새 개념은 "날짜 범위 집계" 하나.
+- ⓑ **테스트 — 사용자 결정으로 미룸(deferred), 강요 X.** `tests/`·`vitest.config.ts` 자체가 없음(플랜 Phase 2~5는 TDD 전제였지만, 학습 단계라 기능 우선하기로 함 → 메모리 [[feature-first-over-tdd-while-learning]]). **TDD-first 다시 들이밀지 말 것.** "나중"이 "영영"이 안 되게, MVP 0 '완료' 선언/이력서 본격 활용 직전에만 핵심 로직(소유확인·검증) 회귀 테스트 한 배치 제안. 그때 라우트는 핸들러 안에서 `auth()`+`prisma` 직접 호출(서비스 레이어 없음)이라 (A) `auth()` 모킹 vs (B) 핵심 로직 함수 추출 중 택1.
+- ⓒ seed 스크립트(`prisma/seed.ts`) — **선택.** 데모 데이터(강아지·기록) 재생성용.
+- 2단계 후보(MVP 0 이후): 인증 API Bearer 토큰 분리(AGENTS.md), soft delete(`Dog.archivedAt`로 "추억 보관").
+- 첫 마디 트리거: "주간 통계 백엔드화 시작"
 
 ## 5. 아키텍처 / 규칙
 - **데이터**: `lib/prisma.ts`(싱글톤) → Neon. UI의 mock 의존부는 `app/providers.tsx`만 바꾸면 실제 API로 교체되게 격리.

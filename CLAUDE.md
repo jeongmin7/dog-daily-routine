@@ -45,13 +45,15 @@
   - `PATCH`·`DELETE /api/dogs/[id]/records/[recordId]` — **3단계 소유 확인**(세션 `user.id` → 강아지 `findFirst where { id, userId }` → 기록 `findFirst where { id: recordId, dogId: dog.id }`). 둘 중 하나라도 못 찾으면 404 → "내 강아지 id + 남의 기록 id" 조합 차단.
   - PATCH: 필드 **화이트리스트**로 부분 수정(`...body` 금지 — mass assignment 차단), 안 보낸 필드는 `undefined`라 Prisma `update`가 안 건드림. `date` 필수 검증 없음(수정이라). 잘못된 JSON은 `req.json()`만 따로 try/catch로 400. DELETE: 소유 확인 후 `delete`, 200+message. `DELETE`는 `req` 미사용 → 첫 인자 `_req`(자리 유지, params는 항상 2번째).
   - UI: `providers.tsx`의 `updateRecord`/`deleteRecord`를 `axios.patch`/`delete`로. dogId는 `store.records`에서 record 찾아 조회(useApp 시그니처 유지=격리), 서버 응답으로 store 갱신, deps에 `store.records`. `page.tsx` 핸들러 await 기반(성공 후 이동), `record-form` 삭제도 저장처럼 busy+실패 alert. 브랜치: `feat/records-patch-delete`(API)·`feat/records-ui-edit-delete`(UI) — **API 먼저 머지 후 UI**(UI가 API 위에서 분기).
+- **강아지(dogs) DELETE ⑥ + UI 연결** (2026-06-15 완료):
+  - `DELETE /api/dogs/[id]` — 경로 파라미터 id, 세션 `user.id`로 소유 확인(`findFirst` → 못 찾으면 404) 후 `dog.delete`. 기록은 스키마 `onDelete: Cascade`로 연쇄 삭제. (작업 중 `/api/dogs` 컬렉션에 body 기반 DELETE를 잠깐 뒀다가 경로 방식 `[id]/route.ts`로 옮기고 중복 제거.)
+  - UI: `providers.tsx`에 `deleteDog(id)` 추가(`axios.delete` 후 store에서 강아지 + 해당 강아지 기록 제거 = cascade와 화면 동기). `dogs/[id]/page.tsx` 하단 "위험 구역" 카드 — settings 탈퇴와 동일한 2단계 확인 패턴. 브랜치 `feat/dogs-delete`(API+UI 한 브랜치, CLI로 develop·main 직접 머지).
+  - ⭐ **1단계(기본 CRUD ①~⑥) 완료.**
 
-**다음 — dogs DELETE (= 1단계 마무리)**
-> ⭐ 관통 원칙: **모든 엔드포인트는 세션 `user.id`로 스코프** (`where: { userId }`). 남의 강아지/기록 접근 차단. 탈퇴·dogs API에서 쓴 패턴 그대로.
-> 격리: `app/providers.tsx`의 mock 액션 내부만 axios로 교체 → UI 코드(`useApp()`)는 유지.
-- ✅ ① `GET /api/dogs` · ✅ ② `POST /api/dogs` · ✅ ③ `GET /api/dogs/[id]` · ✅ ④ 기록 `GET`+`POST`(+UI) · ✅ ⑤ 기록 `PATCH`+`DELETE`(+UI)
-- ⑥ `DELETE /api/dogs/[id]` ← **여기서 시작.** cascade — 강아지 삭제 시 기록 연쇄 삭제(`onDelete: Cascade`). 소유 확인 후 `dog.delete`. UI는 `providers.tsx`에 강아지 삭제 액션 연결.
-- 첫 마디 트리거: "dogs DELETE ⑥ 시작"
+**다음 — 2단계 (미정)**
+> ⭐ 관통 원칙(앞으로도 유지): **모든 엔드포인트는 세션 `user.id`로 스코프** (`where: { userId }`). 남의 강아지/기록 접근 차단.
+- ✅ 1단계 기본 CRUD 전부 완료: ① `GET /api/dogs` · ② `POST /api/dogs` · ③ `GET /api/dogs/[id]` · ④ 기록 `GET`+`POST` · ⑤ 기록 `PATCH`+`DELETE` · ⑥ `DELETE /api/dogs/[id]` (모두 +UI, production 반영).
+- 2단계 후보(미정): 인증 API Bearer 토큰 분리(AGENTS.md), 주간 통계 백엔드화, soft delete(`Dog.archivedAt`로 "추억 보관"). `docs/superpowers/plans` 참고해 다음 세션에 결정.
 
 ## 5. 아키텍처 / 규칙
 - **데이터**: `lib/prisma.ts`(싱글톤) → Neon. UI의 mock 의존부는 `app/providers.tsx`만 바꾸면 실제 API로 교체되게 격리.

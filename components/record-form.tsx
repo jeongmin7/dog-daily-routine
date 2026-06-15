@@ -55,7 +55,7 @@ export function RecordForm({
   dog: Dog;
   record?: DogRecord;
   onSave: (rec: RecordInput) => void | Promise<void>;
-  onDelete?: () => void;
+  onDelete?: () => void | Promise<void>;
   onCancel: () => void;
 }) {
   const [v, setV] = useState<FormState>(() => initial(record));
@@ -74,10 +74,16 @@ export function RecordForm({
     }
   }
 
-  function doDelete() {
+  async function doDelete() {
     if (!onDelete) return;
     if (!window.confirm("이 기록을 삭제할까요?")) return;
-    onDelete();
+    setBusy(true);
+    try {
+      await onDelete();
+    } catch {
+      setBusy(false);
+      window.alert("삭제에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
   }
 
   const title = isEdit ? "기록 수정" : "오늘 기록";

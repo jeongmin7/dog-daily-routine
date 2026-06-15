@@ -27,8 +27,8 @@ type AppContextValue = {
   logout: () => void;
   addDog: (dog: Omit<Dog, "id">) => Promise<Dog>;
   addRecord: (dogId: string, rec: RecordInput) => Promise<DogRecord>;
-  updateRecord: (id: string, rec: RecordInput) => void;
-  deleteRecord: (id: string) => void;
+  updateRecord: (id: string, rec: RecordInput) => Promise<DogRecord>;
+  deleteRecord: (id: string) => Promise<void>;
   resetData: () => void;
 };
 
@@ -133,18 +133,33 @@ export function AppProvider({
     [],
   );
 
-  const updateRecord = useCallback((id: string, rec: RecordInput) => {
-    setStore((s) => ({
-      ...s,
-      records: s.records.map((r) =>
-        r.id === id ? { ...r, ...rec, id, dogId: r.dogId } : r,
-      ),
-    }));
-  }, []);
+  const updateRecord = useCallback(
+    async (id: string, rec: RecordInput): Promise<DogRecord> => {
+      const target = store.records.find((r) => r.id === id);
+      if (!target) throw new Error("기록을 찾을 수 없습니다.");
+      const res = await axios.patch(
+        `/api/dogs/${target.dogId}/records/${id}`,
+        rec,
+      );
+      const updated = res.data.data as DogRecord;
+      setStore((s) => ({
+        ...s,
+        records: s.records.map((r) => (r.id === id ? updated : r)),
+      }));
+      return updated;
+    },
+    [store.records],
+  );
 
-  const deleteRecord = useCallback((id: string) => {
-    setStore((s) => ({ ...s, records: s.records.filter((r) => r.id !== id) }));
-  }, []);
+  const deleteRecord = useCallback(
+    async (id: string): Promise<void> => {
+      const target = store.records.find((r) => r.id === id);
+      if (!target) throw new Error("기록을 찾을 수 없습니다.");
+      await axios.delete(`/api/dogs/${target.dogId}/records/${id}`);
+      setStore((s) => ({ ...s, records: s.records.filter((r) => r.id !== id) }));
+    },
+    [store.records],
+  );
 
   const resetData = useCallback(() => {
     setStore(buildSeed());

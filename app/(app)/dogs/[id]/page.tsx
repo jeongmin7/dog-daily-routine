@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/app/providers";
 import { Btn } from "@/components/ui";
@@ -13,8 +13,11 @@ import { ageString, hasVal, recordsForDog } from "@/lib/format";
 export default function DogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { store } = useApp();
+  const { store, deleteDog } = useApp();
   const dog = store.dogs.find((d) => d.id === id);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!dog) {
     return (
@@ -29,6 +32,18 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
 
   const records = recordsForDog(store.records, id);
   const age = ageString(dog.birthdate);
+
+  async function handleDelete() {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteDog(dog!.id);
+      router.push("/");
+    } catch {
+      setError("삭제에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="fade-in stack gap-6">
@@ -96,6 +111,40 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
             {records.map((r) => (
               <RecordCard key={r.id} record={r} onClick={() => router.push(`/dogs/${id}/records/${r.id}`)} />
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* 위험 구역 — 강아지 삭제 */}
+      <div className="card">
+        <div className="title-md mb-1 text-destructive">강아지 삭제</div>
+        <div className="caption mb-4">
+          잘못 등록했을 때 정정하는 용도예요. 삭제하면 {dog.name}의 정보와 모든 기록이 영구 삭제되고, 되돌릴 수 없어요.
+        </div>
+
+        {error && (
+          <div className="alert alert-error mb-4" role="alert">
+            {error}
+          </div>
+        )}
+
+        {!confirming ? (
+          <Btn variant="destructive" block onClick={() => setConfirming(true)}>
+            강아지 삭제하기
+          </Btn>
+        ) : (
+          <div className="stack gap-3">
+            <div className="body" style={{ fontWeight: 600 }}>
+              정말 {dog.name}을(를) 삭제할까요?
+            </div>
+            <div className="row gap-2">
+              <Btn variant="outline" block disabled={busy} onClick={() => setConfirming(false)}>
+                취소
+              </Btn>
+              <Btn variant="destructive" block loading={busy} loadingText="삭제 중…" onClick={handleDelete}>
+                삭제 확정
+              </Btn>
+            </div>
           </div>
         )}
       </div>

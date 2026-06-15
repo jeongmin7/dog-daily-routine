@@ -26,6 +26,7 @@ type AppContextValue = {
   login: (email: string) => void;
   logout: () => void;
   addDog: (dog: Omit<Dog, "id">) => Promise<Dog>;
+  deleteDog: (id: string) => Promise<void>;
   addRecord: (dogId: string, rec: RecordInput) => Promise<DogRecord>;
   updateRecord: (id: string, rec: RecordInput) => Promise<DogRecord>;
   deleteRecord: (id: string) => Promise<void>;
@@ -123,6 +124,16 @@ export function AppProvider({
     return created;
   }, []);
 
+  const deleteDog = useCallback(async (id: string): Promise<void> => {
+    await axios.delete(`/api/dogs/${id}`);
+    // 서버는 cascade로 강아지+기록을 지우므로, 화면에서도 둘 다 제거.
+    setStore((s) => ({
+      ...s,
+      dogs: s.dogs.filter((d) => d.id !== id),
+      records: s.records.filter((r) => r.dogId !== id),
+    }));
+  }, []);
+
   const addRecord = useCallback(
     async (dogId: string, rec: RecordInput): Promise<DogRecord> => {
       const res = await axios.post(`/api/dogs/${dogId}/records`, rec);
@@ -174,6 +185,7 @@ export function AppProvider({
         login,
         logout,
         addDog,
+        deleteDog,
         addRecord,
         updateRecord,
         deleteRecord,

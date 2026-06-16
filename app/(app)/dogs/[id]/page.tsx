@@ -1,8 +1,10 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import { useApp } from "@/app/providers";
+import type { DogStats } from "@/lib/types";
 import { Btn } from "@/components/ui";
 import { BackBar } from "@/components/back-bar";
 import { DogAvatar } from "@/components/brand";
@@ -18,6 +20,15 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 주간 통계는 클라 계산 대신 서버 집계(GET /api/dogs/[id]/stats)에서 받는다.
+  const [stats, setStats] = useState<DogStats | null>(null);
+  useEffect(() => {
+    axios
+      .get(`/api/dogs/${id}/stats`)
+      .then((res) => setStats(res.data?.data ?? null))
+      .catch(() => setStats(null));
+  }, [id]);
 
   if (!dog) {
     return (
@@ -97,8 +108,14 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
               기록이 쌓이면 추이를 보여드릴게요.
             </div>
           </div>
+        ) : stats ? (
+          <WeeklyStats stats={stats} />
         ) : (
-          <WeeklyStats records={records} />
+          <div className="card">
+            <div className="caption" style={{ textAlign: "center", padding: "10px 0" }}>
+              통계를 불러오는 중…
+            </div>
+          </div>
         )}
       </div>
 

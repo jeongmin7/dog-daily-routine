@@ -1,9 +1,9 @@
 /* 주간 통계 차트 — 라인 (시안 최종 확정 변형). 식사·산책·체중 3개. */
 
-import type { DogRecord } from "@/lib/types";
+import type { DogStats, StatPoint } from "@/lib/types";
 import { fmtMonthDay } from "@/lib/format";
 
-type Point = { date: string; value: number | null };
+type Point = StatPoint;
 
 function buildScale(values: number[]) {
   let min = Math.min(...values);
@@ -22,15 +22,20 @@ function StatChart({
   data,
   color,
   unit,
+  headline,
+  headlineLabel,
+  sub,
 }: {
   title: string;
   emoji: string;
   data: Point[];
   color: string;
   unit: string;
+  headline: number | null; // 헤더에 띄울 요약값(서버 집계) — 평균/총합/최신값
+  headlineLabel: string; // "평균" · "총" · "최근"
+  sub?: string | null; // 보조 문구(체중 증감 등)
 }) {
   const pts = data.filter((d): d is { date: string; value: number } => d.value !== null && d.value !== undefined);
-  const latest = pts.length ? pts[pts.length - 1].value : null;
 
   const W = 320;
   const H = 184;
@@ -48,9 +53,13 @@ function StatChart({
         <span style={{ fontSize: 16 }}>{emoji}</span>
         <span className="title-md">{title}</span>
       </div>
-      <div className="chart-latest num" style={{ color }}>
-        {latest != null ? latest : "–"}
-        <span className="u">{unit}</span>
+      <div className="stack" style={{ alignItems: "flex-end", gap: 1 }}>
+        <div className="chart-latest num" style={{ color }}>
+          <span className="u" style={{ marginRight: 4 }}>{headlineLabel}</span>
+          {headline != null ? headline : "–"}
+          <span className="u">{unit}</span>
+        </div>
+        {sub && <span className="caption">{sub}</span>}
       </div>
     </div>
   );
@@ -113,17 +122,45 @@ function StatChart({
   );
 }
 
-export function WeeklyStats({ records }: { records: DogRecord[] }) {
-  // 최근 7개 기록을 날짜 오름차순으로
-  const week = records.slice(0, 7).slice().reverse();
-  const mk = (key: "meal" | "walkMin" | "weight"): Point[] =>
-    week.map((r) => ({ date: r.date, value: r[key] === null || r[key] === undefined ? null : Number(r[key]) }));
+// 체중 증감 문구. 서버 change 값(부호 있음)을 사람 말로.
+function fmtChange(change: number | null): string | null {
+  if (change == null) return null;
+  const v = Math.round(change * 10) / 10;
+  if (v === 0) return "지난 기록과 동일";
+  return `지난 기록 대비 ${v > 0 ? "+" : ""}${v}kg`;
+}
 
+export function WeeklyStats({ stats }: { stats: DogStats }) {
   return (
     <div className="stack gap-3">
-      <StatChart title="식사량" emoji="🍽" data={mk("meal")} color="var(--primary)" unit="g" />
-      <StatChart title="산책 시간" emoji="🚶" data={mk("walkMin")} color="var(--accent)" unit="분" />
-      <StatChart title="체중" emoji="⚖" data={mk("weight")} color="var(--success)" unit="kg" />
+      <StatChart
+        title="식사량"
+        emoji="🍽"
+        color="var(--primary)"
+        unit="g"
+        data={stats.meal.series}
+        headline={stats.meal.avg}
+        headlineLabel="평균"
+      />
+      <StatChart
+        title="산책 시간"
+        emoji="🚶"
+        color="var(--accent)"
+        unit="분"
+        data={stats.walk.series}
+        headline={stats.walk.sum}
+        headlineLabel="총"
+      />
+      <StatChart
+        title="체중"
+        emoji="⚖"
+        color="var(--success)"
+        unit="kg"
+        data={stats.weight.series}
+        headline={stats.weight.latest}
+        headlineLabel="최근"
+        sub={fmtChange(stats.weight.change)}
+      />
     </div>
   );
 }

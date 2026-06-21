@@ -5,7 +5,7 @@
    - 클라 상태: zustand(lib/store.ts) — 서버 세션 유저를 한 번 시드한다.
    인증 가드/세션은 서버 레이아웃 auth() + NextAuth가 담당(여기선 표시용 유저만). */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   QueryClient,
   QueryClientProvider,
@@ -33,10 +33,16 @@ export function AppProvider({
       }),
   );
 
-  // 서버에서 받은 세션 유저를 zustand에 한 번만 시드(초기 렌더 전).
+  // 서버 세션 유저를 zustand에 시드.
+  // - 첫 렌더 시 동기 시드(하드 로드에서 인사말 깜빡임 방지).
+  // - 로그인/로그아웃으로 세션이 바뀌면(router.refresh로 initialUser 갱신)
+  //   effect가 다시 동기화(AppProvider는 재마운트되지 않으므로 effect 필요).
   useState(() => {
     if (initialUser) useUserStore.setState({ user: initialUser });
   });
+  useEffect(() => {
+    useUserStore.getState().setUser(initialUser);
+  }, [initialUser?.email, initialUser?.name]);
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

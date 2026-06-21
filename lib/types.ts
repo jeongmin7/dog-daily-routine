@@ -24,6 +24,16 @@ export type DogRecord = {
 export type RecordInput = Omit<DogRecord, "id" | "dogId">;
 export type DogInput = Omit<Dog, "id">;
 
+/* 개인 API 토큰 — GET /api/tokens 응답(data). 해시·평문은 절대 미포함.
+   생성(POST) 응답만 평문 token을 1회 포함(ApiTokenCreated). */
+export type ApiToken = {
+  id: string;
+  name: string;
+  createdAt: string; // ISO
+  lastUsedAt: string | null;
+};
+export type ApiTokenCreated = { id: string; name: string; createdAt: string; token: string };
+
 /* 주간 통계 — GET /api/dogs/[id]/stats 응답(data)의 모양.
    집계는 서버에서. 차트는 series만 그리고 요약값(avg/sum/latest/change)은 헤더에 표시. */
 export type StatPoint = { date: string; value: number | null };

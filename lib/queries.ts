@@ -11,7 +11,15 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import axios from "axios";
-import type { Dog, DogInput, DogRecord, DogStats, RecordInput } from "./types";
+import type {
+  ApiToken,
+  ApiTokenCreated,
+  Dog,
+  DogInput,
+  DogRecord,
+  DogStats,
+  RecordInput,
+} from "./types";
 
 /* ── 쿼리 키 팩토리 ──
    계층 구조(["dogs", id, "records"])라 상위 키 invalidate가 하위까지 무효화한다. */
@@ -21,6 +29,7 @@ export const qk = {
   dog: (id: string) => ["dogs", id] as const,
   records: (dogId: string) => ["dogs", dogId, "records"] as const,
   stats: (dogId: string) => ["dogs", dogId, "stats"] as const,
+  tokens: ["tokens"] as const,
 };
 
 /* ── fetchers ── */
@@ -176,6 +185,42 @@ export function useDeleteRecord(dogId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.records(dogId) });
       qc.invalidateQueries({ queryKey: qk.stats(dogId) });
+    },
+  });
+}
+
+/* ── 개인 API 토큰 ── */
+export function useApiTokens() {
+  return useQuery({
+    queryKey: qk.tokens,
+    queryFn: async (): Promise<ApiToken[]> => {
+      const res = await axios.get("/api/tokens");
+      return res.data?.data ?? [];
+    },
+  });
+}
+
+export function useCreateApiToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string): Promise<ApiTokenCreated> => {
+      const res = await axios.post("/api/tokens", { name });
+      return res.data.data; // 평문 token 포함(1회)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.tokens });
+    },
+  });
+}
+
+export function useRevokeApiToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      await axios.delete(`/api/tokens/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.tokens });
     },
   });
 }

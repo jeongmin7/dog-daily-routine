@@ -42,6 +42,8 @@ export function AppProvider({
   });
   useEffect(() => {
     useUserStore.getState().setUser(initialUser);
+    // initialUser 객체는 매 렌더 새로 생성되므로 식별값(email·name)만 의존성으로 둔다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialUser?.email, initialUser?.name]);
 
   return (

@@ -41,7 +41,7 @@ password:pw,
 name:name.trim()||null
   })
   router.push(`/login?signup=success&email=${encodeURIComponent(email.trim())}`)
- } catch(err:any){
+ } catch(err: unknown){
   const msg= axios.isAxiosError(err)
         ? err.response?.data?.error ?? "가입에 실패했어요."
         : "네트워크 오류가 발생했어요.";

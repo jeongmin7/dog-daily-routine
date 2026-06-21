@@ -55,11 +55,11 @@
 **⭐ MVP 0 기능 완료 (CRUD ①~⑥ + ⓐ 주간통계 모두 production 반영). 남은 건 선택/후속.**
 > ⭐ 관통 원칙(앞으로도 유지): **모든 엔드포인트는 세션 `user.id`로 스코프** (`where: { userId }`). 남의 강아지/기록 접근 차단.
 - ✅ 기본 CRUD ①~⑥ 완료(모두 +UI, production): ① `GET /api/dogs` · ② `POST /api/dogs` · ③ `GET /api/dogs/[id]` · ④ 기록 `GET`+`POST` · ⑤ 기록 `PATCH`+`DELETE` · ⑥ `DELETE /api/dogs/[id]`.
-- ✅ **ⓐ 주간 통계 백엔드화 완료** (2026-06-16, production): `GET /api/dogs/[id]/stats` — 소유확인 + **한국(UTC+9) 기준 7일 범위**(`date`가 ISO `YYYY-MM-DD` String이라 `gte` **문자열 사전순 비교**가 곧 날짜 비교) + 집계. 지표별 집계 = **유량/저량 구분**: meal `avg`·walk `sum`(+avg)·weight `latest`+`change`. **평균/합계는 null(미기록) 제외, 분모 = 기록한 날 수**(7 아님), 빈 지표는 `null`. UI: `lib/types.ts`에 `DogStats`, `WeeklyStats`가 `store.records` 클라계산 대신 stats API의 `series`/요약값 사용(`dogs/[id]/page.tsx`가 마운트 시 fetch). 브랜치 `feat/dogs-stats-api`(API+UI 한 브랜치, CLI 직접 머지). ✅ **로컬 런타임 검증 완료**(2026-06-21, react-query 마이그레이션 검증 때 차트 숫자 눈으로 확인). production 차트만 미확인.
-- ⓑ **테스트 — 사용자 결정으로 미룸(deferred), 강요 X.** `tests/`·`vitest.config.ts` 자체가 없음(플랜 Phase 2~5는 TDD 전제였지만, 학습 단계라 기능 우선하기로 함 → 메모리 [[feature-first-over-tdd-while-learning]]). **TDD-first 다시 들이밀지 말 것.** "나중"이 "영영"이 안 되게, MVP 0 '완료' 선언/이력서 본격 활용 직전에만 핵심 로직(소유확인·검증) 회귀 테스트 한 배치 제안. 그때 라우트는 핸들러 안에서 `auth()`+`prisma` 직접 호출(서비스 레이어 없음)이라 (A) `auth()` 모킹 vs (B) 핵심 로직 함수 추출 중 택1.
+- ✅ **ⓐ 주간 통계 백엔드화 완료** (2026-06-16, production): `GET /api/dogs/[id]/stats` — 소유확인 + **한국(UTC+9) 기준 7일 범위**(`date`가 ISO `YYYY-MM-DD` String이라 `gte` **문자열 사전순 비교**가 곧 날짜 비교) + 집계. 지표별 집계 = **유량/저량 구분**: meal `avg`·walk `sum`(+avg)·weight `latest`+`change`. **평균/합계는 null(미기록) 제외, 분모 = 기록한 날 수**(7 아님), 빈 지표는 `null`. UI: `lib/types.ts`에 `DogStats`, `WeeklyStats`가 `store.records` 클라계산 대신 stats API의 `series`/요약값 사용(`dogs/[id]/page.tsx`가 마운트 시 fetch). 브랜치 `feat/dogs-stats-api`(API+UI 한 브랜치, CLI 직접 머지). ✅ **로컬·production 런타임 검증 모두 완료**(2026-06-21, chrome-devtools MCP로 차트 숫자 눈 확인 — 식사 avg/산책 sum/체중 latest 입력값 일치).
+- ✅ **ⓑ API 회귀 테스트 한 배치 완료** (2026-06-21, 브랜치 `feat/api-regression-tests`): **vitest**(`vitest.config.ts`, node env, `@` 별칭) 도입. 전략은 위 (A) — **라우트 핸들러를 직접 import + `@/lib/auth`·`@/lib/prisma`를 `vi.mock`**(서비스 레이어 추출 안 함). `tests/` 4파일 **20개**: dogs(GET/POST), dog-id(GET/DELETE), records(GET/POST), record-id(PATCH/DELETE). 커버리지 = **소유 스코프**(`where {id,userId}` 호출 단언, 남의 것 404), **인증**(세션 없으면 401), **검증**(date 필수 400·잘못된 JSON 400·이름 필수 400), **mass-assignment 차단**(POST는 userId/dogId를 세션·검증된 dog.id로 주입, PATCH는 화이트리스트 외 필드 update에 미전달). 뮤테이션 테스트로 회귀 포착 확인(소유확인에서 userId 빼면 빨강). 실행: `npm test`. **추가 기능 PR 전 `npm test` 돌릴 것.**
 - ⓒ seed 스크립트(`prisma/seed.ts`) — **선택.** 데모 데이터(강아지·기록) 재생성용.
 - 2단계 후보(MVP 0 이후): 인증 API Bearer 토큰 분리(AGENTS.md), soft delete(`Dog.archivedAt`로 "추억 보관").
-- 첫 마디 트리거: "stats 검증부터"(production 차트 숫자 확인) · 또는 "2단계 시작"(Bearer/soft delete) · ⓑ 테스트는 이력서 본격 활용 직전에.
+- 첫 마디 트리거: "2단계 시작"(Bearer/soft delete) · 또는 seed 스크립트.
 
 ## 5. 아키텍처 / 규칙
 - **데이터(서버 상태)**: `lib/prisma.ts`(싱글톤) → Neon. 클라는 `lib/queries.ts`의 react-query 훅으로만 접근(직접 axios/`useEffect` fetch 금지). 새 엔드포인트 추가 시 fetcher + 쿼리/뮤테이션 훅을 여기 추가하고, 쓰기 후엔 관련 `qk` 키를 invalidate.
@@ -87,5 +87,6 @@
 
 ## 8. 어디에 뭐가 있나
 - `docs/superpowers/specs/*` — 설계 / `docs/superpowers/plans/*` — MVP 0 단계별 플랜 / `docs/design-briefs/*` — 디자인 명세
-- `lib/` — prisma · auth · password · format · types · mock-store
+- `lib/` — prisma · auth · password · format · types · queries(react-query) · store(zustand)
 - `app/api/` — signup · auth / `app/(auth)/` — login·signup / `app/(app)/` — 대시보드 등
+- `tests/` — vitest API 회귀 테스트(`*.test.ts` + `helpers.ts`), `vitest.config.ts`(루트)

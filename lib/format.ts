@@ -1,7 +1,5 @@
 /* 포맷 헬퍼 + 메트릭 메타데이터 — 화면 전체에서 공유 (record card, chart, form). */
 
-import type { DogRecord } from "./types";
-
 export const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export function isoDaysAgo(n: number): string {
@@ -58,9 +56,3 @@ export const METRICS: Record<MetricKey, { key: MetricKey; emoji: string; label: 
 };
 
 export const METRIC_ORDER: MetricKey[] = ["meal", "walkMin", "walkKm", "poop", "weight"];
-
-export function recordsForDog(records: DogRecord[], dogId: string): DogRecord[] {
-  return records
-    .filter((r) => r.dogId === dogId)
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
-}

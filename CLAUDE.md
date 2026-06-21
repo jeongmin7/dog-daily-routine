@@ -7,31 +7,33 @@
 
 ## 1. 무슨 프로젝트인가
 - **하루** = 강아지 보호자를 위한 일일 건강 트래커 (식사·산책·배변·체중 기록 + 주간 통계).
-- **목적: 백엔드 학습 프로젝트.** 프론트엔드 2년차 → Next.js 풀스택 이직 준비.
+- **목적: 포트폴리오/사이드 프로젝트.** (원래 백엔드 학습용으로 시작 → 2026-06-21 방향 전환. 학습용은 더 단순한 걸로 따로, 이 레포는 "Claude를 얼마나 잘 썼는지" 보여주는 완성형 사이드 프로젝트로.) 프론트엔드 2년차 → Next.js 풀스택 이직 준비.
 - 디자인은 Claude Design "하루" 핸드오프 기준. 스카이블루 `#2E92D6` + 코랄 `#FF7A6E`, 발바닥 로고, Pretendard+Inter.
 
 ## 2. ⭐ 작업 방식 (가장 중요 — 이대로 협업할 것)
-- **백엔드 코드는 사용자가 직접 타이핑한다.** AI는 **코드를 대신 생성하지 않고** 개념·설계 방향·디버깅 힌트만 준다 (학습이 목적).
-  - 예외: 순수 보일러플레이트(`lib/prisma.ts` 싱글톤 등)나 설정/플러밍은 AI가 만들어도 됨.
-- **UI/디자인 레이어는 AI가 구현한다** ("하루" 시안 기준).
-- **개념 먼저, 한 번에 한 단계씩, 천천히.** 한 메시지에 개념 하나. 큰 덩어리로 쏟아내지 말 것.
+- **이제 AI가 코드를 전부 작성한다** (백엔드 포함). 학습 제약(사용자 직접 타이핑) 해제 — 포트폴리오 완성이 목표. 2026-06-21 전환.
+- **UI/디자인 레이어는 "하루" 시안 기준**으로 구현.
+- **기능별 브랜치 필수**: `feat/* → develop → main`(PR). 잊지 말 것. 커밋 메시지 번호는 일반 숫자, **Co-Authored-By 트레일러 금지** (메모리 참고).
 - **버전/설정은 추측 금지.** 라이브러리 버전·셋업은 최신 공식 문서나 npm 레지스트리로 **확인 후** 안내 (학습 데이터가 오래됐을 수 있음).
-- 사용자는 **git·프론트엔드(React/TS)는 잘 안다.** 새로 배우는 건 **백엔드 개념**뿐.
+- 사용자는 **git·프론트엔드(React/TS)는 잘 안다.**
 
 ## 3. 기술 스택
 - Next.js 16 (App Router, Turbopack) · TypeScript · Tailwind CSS 4
 - **Prisma 6** + **Neon Postgres**
 - **NextAuth v5 (Auth.js, `next-auth@beta`)** — Credentials provider + JWT 세션
+- **TanStack Query 5 (서버 상태) + Zustand 5 (클라 UI 상태)** — 2026-06-21 도입
 - bcryptjs(비번 해시) · axios(클라 HTTP)
 - 배포 예정: Vercel
 
 ## 4. 현재 진행 상태 (작업하며 갱신할 것)
 **완료**
-- UI 8개 화면(하루 시안). 단 dogs/records 데이터는 아직 일부 **mock**(localStorage) — `app/providers.tsx`, `lib/mock-store.ts`.
+- UI 8개 화면(하루 시안). dogs/records/stats는 전부 실제 API(react-query)로 연결됨 (mock/localStorage 제거 완료).
+- **react-query + zustand 마이그레이션** (2026-06-21 완료): 기존 Context 단일 store(`app/providers.tsx`) + `lib/mock-store.ts`(localStorage 폴백)를 걷어내고 → 서버 상태는 **TanStack Query**(`lib/queries.ts`: 쿼리키 팩토리 `qk` + `useDogs/useDog/useRecords/useDogStats` + mutation 훅들, mutation 성공 시 `invalidateQueries`), 클라 상태는 **zustand**(`lib/store.ts` `useUserStore` — 서버 세션 유저만 시드). `providers.tsx`는 이제 `QueryClientProvider` + 유저 스토어 시드(+세션 변경 시 effect로 재동기화)만. 죽은 legacy(`authed/login/logout/resetData`, `Store/User` 타입, `recordsForDog`) 정리. 대시보드 "최근 기록(전체)"은 `useQueries`로 강아지별 기록 병렬 수집. 브랜치 `feat/react-query-zustand`(PR #10 → develop).
+  - ✅ **런타임 검증 완료** (chrome-devtools MCP로 가입→로그인→강아지 등록→기록 작성→수정→삭제→탈퇴 전 플로우, 콘솔 에러 0). **stats 차트 런타임 검증도 이때 같이 통과**(식사 평균/산책 총합/체중 추이 숫자 확인). 검증 중 **유저 이름 인사말 회귀 1건 발견·수정**: zustand 시드를 `useState` 1회성으로 해서 로그인 후 `router.refresh`로 세션이 채워져도 스토어가 안 바뀌던 버그 → effect 동기화로 수정(커밋 9f1a54f).
 - Prisma 스키마 3모델 `User ─< Dog ─< DogRecord`(관계 + `onDelete: Cascade`), Neon에 마이그레이션 완료.
 - **회원가입**: `POST /api/signup` → bcrypt 해시 + `prisma.user.create` → DB 저장 (동작 확인).
 - **로그인**: NextAuth Credentials(`lib/auth.ts`) + `verifyPassword`. 폼 `signIn` 연결, 가드는 `app/(app)/layout.tsx`의 서버 `auth()`, 헤더 `signOut`.
-- **회원정보 표시**: 루트 `layout.tsx`에서 `auth()` → `AppProvider initialUser` → `providers.tsx`의 `withSessionUser`로 store.user에 주입. 대시보드 인사말이 실제 이름으로 표시.
+- **회원정보 표시**: 루트 `layout.tsx`에서 `auth()` → `AppProvider initialUser` → `providers.tsx`가 `useUserStore`(zustand)에 시드. 대시보드 인사말이 `useUserStore`에서 이름을 읽어 표시.
 - **탈퇴하기**: `DELETE /api/account` — 세션 user.id로 `prisma.user.delete`(클라 입력 신뢰 X), `onDelete: Cascade`로 강아지·기록 연쇄 삭제. UI는 `app/(app)/settings` + `components/settings-client.tsx`(2단계 확인 → fetch → `signOut`).
 - **배포**: Vercel `dog-daily-routine` 프로젝트(중복 2개 정리 완료), production = `main` 브랜치. `turbopack.root` 고정(떠도는 lockfile로 루트 오인 → 패닉 해결). git-flow: `feat/* → develop → main`(PR). 모든 기능 production 반영됨.
 - **dogs API (① ② ③) + UI 연결** (2026-06-10 완료, production 반영):
@@ -53,14 +55,15 @@
 **⭐ MVP 0 기능 완료 (CRUD ①~⑥ + ⓐ 주간통계 모두 production 반영). 남은 건 선택/후속.**
 > ⭐ 관통 원칙(앞으로도 유지): **모든 엔드포인트는 세션 `user.id`로 스코프** (`where: { userId }`). 남의 강아지/기록 접근 차단.
 - ✅ 기본 CRUD ①~⑥ 완료(모두 +UI, production): ① `GET /api/dogs` · ② `POST /api/dogs` · ③ `GET /api/dogs/[id]` · ④ 기록 `GET`+`POST` · ⑤ 기록 `PATCH`+`DELETE` · ⑥ `DELETE /api/dogs/[id]`.
-- ✅ **ⓐ 주간 통계 백엔드화 완료** (2026-06-16, production): `GET /api/dogs/[id]/stats` — 소유확인 + **한국(UTC+9) 기준 7일 범위**(`date`가 ISO `YYYY-MM-DD` String이라 `gte` **문자열 사전순 비교**가 곧 날짜 비교) + 집계. 지표별 집계 = **유량/저량 구분**: meal `avg`·walk `sum`(+avg)·weight `latest`+`change`. **평균/합계는 null(미기록) 제외, 분모 = 기록한 날 수**(7 아님), 빈 지표는 `null`. UI: `lib/types.ts`에 `DogStats`, `WeeklyStats`가 `store.records` 클라계산 대신 stats API의 `series`/요약값 사용(`dogs/[id]/page.tsx`가 마운트 시 fetch). 브랜치 `feat/dogs-stats-api`(API+UI 한 브랜치, CLI 직접 머지). ⚠️ **런타임 검증(production 차트 숫자 눈으로)은 아직** — 확인 권장.
+- ✅ **ⓐ 주간 통계 백엔드화 완료** (2026-06-16, production): `GET /api/dogs/[id]/stats` — 소유확인 + **한국(UTC+9) 기준 7일 범위**(`date`가 ISO `YYYY-MM-DD` String이라 `gte` **문자열 사전순 비교**가 곧 날짜 비교) + 집계. 지표별 집계 = **유량/저량 구분**: meal `avg`·walk `sum`(+avg)·weight `latest`+`change`. **평균/합계는 null(미기록) 제외, 분모 = 기록한 날 수**(7 아님), 빈 지표는 `null`. UI: `lib/types.ts`에 `DogStats`, `WeeklyStats`가 `store.records` 클라계산 대신 stats API의 `series`/요약값 사용(`dogs/[id]/page.tsx`가 마운트 시 fetch). 브랜치 `feat/dogs-stats-api`(API+UI 한 브랜치, CLI 직접 머지). ✅ **로컬 런타임 검증 완료**(2026-06-21, react-query 마이그레이션 검증 때 차트 숫자 눈으로 확인). production 차트만 미확인.
 - ⓑ **테스트 — 사용자 결정으로 미룸(deferred), 강요 X.** `tests/`·`vitest.config.ts` 자체가 없음(플랜 Phase 2~5는 TDD 전제였지만, 학습 단계라 기능 우선하기로 함 → 메모리 [[feature-first-over-tdd-while-learning]]). **TDD-first 다시 들이밀지 말 것.** "나중"이 "영영"이 안 되게, MVP 0 '완료' 선언/이력서 본격 활용 직전에만 핵심 로직(소유확인·검증) 회귀 테스트 한 배치 제안. 그때 라우트는 핸들러 안에서 `auth()`+`prisma` 직접 호출(서비스 레이어 없음)이라 (A) `auth()` 모킹 vs (B) 핵심 로직 함수 추출 중 택1.
 - ⓒ seed 스크립트(`prisma/seed.ts`) — **선택.** 데모 데이터(강아지·기록) 재생성용.
 - 2단계 후보(MVP 0 이후): 인증 API Bearer 토큰 분리(AGENTS.md), soft delete(`Dog.archivedAt`로 "추억 보관").
 - 첫 마디 트리거: "stats 검증부터"(production 차트 숫자 확인) · 또는 "2단계 시작"(Bearer/soft delete) · ⓑ 테스트는 이력서 본격 활용 직전에.
 
 ## 5. 아키텍처 / 규칙
-- **데이터**: `lib/prisma.ts`(싱글톤) → Neon. UI의 mock 의존부는 `app/providers.tsx`만 바꾸면 실제 API로 교체되게 격리.
+- **데이터(서버 상태)**: `lib/prisma.ts`(싱글톤) → Neon. 클라는 `lib/queries.ts`의 react-query 훅으로만 접근(직접 axios/`useEffect` fetch 금지). 새 엔드포인트 추가 시 fetcher + 쿼리/뮤테이션 훅을 여기 추가하고, 쓰기 후엔 관련 `qk` 키를 invalidate.
+- **클라 UI 상태**: zustand `lib/store.ts`(`useUserStore`). 서버 상태를 여기 복제하지 말 것 — 서버에서 오는 건 전부 react-query.
 - **인증**: NextAuth v5 Credentials, **JWT 세션**(DB 어댑터 없음). 가드는 미들웨어 대신 **서버 레이아웃에서 `auth()`** (Prisma가 edge 비호환이라).
 - **API 규칙**: AGENTS.md 참고 (json만 · 정확한 status code · 에러 `{error}` · 검증 프론트1차+백2차 · 인증 API는 Bearer→API 분리 단계에서).
 - **모델 요약**: `User`(id, email@unique, password=해시, name?, createdAt) / `Dog`(+userId FK, name, breed?, birthdate?, weight?) / `DogRecord`(+dogId FK, date, meal?, walkMin?, walkKm?, poop?, weight?, memo?).

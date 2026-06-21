@@ -14,6 +14,7 @@ import {
 import type { DiseaseMetric } from "@/lib/types";
 import { Btn } from "./ui";
 import { TapCounter } from "./tap-counter";
+import { MeasurementInput } from "./measurement-input";
 
 // 임계값 벗어남 판정.
 function isAlerting(metric: DiseaseMetric, value: number): boolean {
@@ -164,10 +165,8 @@ function MetricRow({ dogId, metric }: { dogId: string; metric: DiseaseMetric }) 
             <div className="caption" style={{ marginTop: 2 }}>아직 측정 기록이 없어요</div>
           )}
         </div>
-        {metric.inputType === "counter" ? (
+        {!measuring && (
           <Btn size="sm" onClick={() => setMeasuring(true)}>측정</Btn>
-        ) : (
-          <span className="caption">측정 도구 준비 중</span>
         )}
       </div>
 
@@ -177,12 +176,21 @@ function MetricRow({ dogId, metric }: { dogId: string; metric: DiseaseMetric }) 
         </div>
       )}
 
-      {measuring && (
+      {/* counter는 풀스크린 오버레이, 나머지는 인라인 입력 */}
+      {measuring && metric.inputType === "counter" && (
         <TapCounter
           metric={metric}
           saving={add.isPending}
           onSave={save}
           onClose={() => setMeasuring(false)}
+        />
+      )}
+      {measuring && metric.inputType !== "counter" && (
+        <MeasurementInput
+          metric={metric}
+          saving={add.isPending}
+          onSave={save}
+          onCancel={() => setMeasuring(false)}
         />
       )}
     </div>

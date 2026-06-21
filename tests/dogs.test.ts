@@ -23,17 +23,29 @@ describe("GET /api/dogs", () => {
     expect(res.status).toBe(401);
   });
 
-  it("내 강아지만 조회한다 (where userId 스코프)", async () => {
+  it("기본은 활성(archivedAt: null) + userId 스코프만 조회", async () => {
     vi.mocked(auth).mockResolvedValue(SESSION as never);
     vi.mocked(prisma.dog.findMany).mockResolvedValue([{ id: "d1" }] as never);
 
-    const res = await GET(new Request("http://test.local"));
+    const res = await GET(new Request("http://test.local/api/dogs"));
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.data).toEqual([{ id: "d1" }]);
     expect(prisma.dog.findMany).toHaveBeenCalledWith({
-      where: { userId: "user-1" },
+      where: { userId: "user-1", archivedAt: null },
+    });
+  });
+
+  it("?archived=true 면 보관된 것만 조회 (archivedAt: not null)", async () => {
+    vi.mocked(auth).mockResolvedValue(SESSION as never);
+    vi.mocked(prisma.dog.findMany).mockResolvedValue([{ id: "d-arc" }] as never);
+
+    const res = await GET(new Request("http://test.local/api/dogs?archived=true"));
+
+    expect(res.status).toBe(200);
+    expect(prisma.dog.findMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", archivedAt: { not: null } },
     });
   });
 });

@@ -14,10 +14,13 @@ import axios from "axios";
 import type {
   ApiToken,
   ApiTokenCreated,
+  Disease,
+  DogDisease,
   Dog,
   DogInput,
   DogRecord,
   DogStats,
+  Measurement,
   Medication,
   MedicationInput,
   Photo,
@@ -34,6 +37,10 @@ export const qk = {
   stats: (dogId: string) => ["dogs", dogId, "stats"] as const,
   photos: (dogId: string) => ["dogs", dogId, "photos"] as const,
   medications: (dogId: string) => ["dogs", dogId, "medications"] as const,
+  diseases: ["diseases"] as const,
+  dogDiseases: (dogId: string) => ["dogs", dogId, "diseases"] as const,
+  measurements: (dogId: string, metricKey: string) =>
+    ["dogs", dogId, "measurements", metricKey] as const,
   tokens: ["tokens"] as const,
 };
 
@@ -286,6 +293,85 @@ export function useToggleDose(dogId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.medications(dogId) });
+    },
+  });
+}
+
+/* ── 지병 모니터링 ── */
+export function useDiseaseCatalog() {
+  return useQuery({
+    queryKey: qk.diseases,
+    queryFn: async (): Promise<Disease[]> => {
+      const res = await axios.get("/api/diseases");
+      return res.data?.data ?? [];
+    },
+  });
+}
+
+export function useDogDiseases(dogId: string) {
+  return useQuery({
+    queryKey: qk.dogDiseases(dogId),
+    queryFn: async (): Promise<DogDisease[]> => {
+      const res = await axios.get(`/api/dogs/${dogId}/diseases`);
+      return res.data?.data ?? [];
+    },
+  });
+}
+
+export function useRegisterDisease(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (diseaseKey: string): Promise<void> => {
+      await axios.post(`/api/dogs/${dogId}/diseases`, { diseaseKey });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.dogDiseases(dogId) });
+    },
+  });
+}
+
+export function useUnregisterDisease(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (diseaseKey: string): Promise<void> => {
+      await axios.delete(`/api/dogs/${dogId}/diseases/${diseaseKey}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.dogDiseases(dogId) });
+    },
+  });
+}
+
+export function useMeasurements(dogId: string, metricKey: string) {
+  return useQuery({
+    queryKey: qk.measurements(dogId, metricKey),
+    queryFn: async (): Promise<Measurement[]> => {
+      const res = await axios.get(`/api/dogs/${dogId}/measurements`, {
+        params: { metricKey },
+      });
+      return res.data?.data ?? [];
+    },
+  });
+}
+
+export function useAddMeasurement(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      metricKey,
+      value,
+    }: {
+      metricKey: string;
+      value: number;
+    }): Promise<Measurement> => {
+      const res = await axios.post(`/api/dogs/${dogId}/measurements`, {
+        metricKey,
+        value,
+      });
+      return res.data.data;
+    },
+    onSuccess: (_data, { metricKey }) => {
+      qc.invalidateQueries({ queryKey: qk.measurements(dogId, metricKey) });
     },
   });
 }

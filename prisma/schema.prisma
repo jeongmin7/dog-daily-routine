@@ -45,6 +45,30 @@ model Dog {
   archivedAt DateTime?
   records DogRecord[]
   photos Photo[]
+  medications Medication[]
+}
+
+model Medication {
+  id String @id @default(cuid())
+  dogId String
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  name String
+  dosage String?
+  times String[]
+  remainingCount Int?
+  createdAt DateTime @default(now())
+  doses MedicationDose[]
+}
+
+model MedicationDose {
+  id String @id @default(cuid())
+  medicationId String
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  date String
+  time String
+  takenAt DateTime @default(now())
+
+  @@unique([medicationId, date, time])
 }
 
 model Photo {

@@ -9,6 +9,7 @@ import { DogAvatar } from "@/components/brand";
 import { RecordCard } from "@/components/record-card";
 import { WeeklyStats } from "@/components/stat-chart";
 import { DogPhotos } from "@/components/dog-photos";
+import { DogMedications } from "@/components/dog-medications";
 import { ageString, hasVal } from "@/lib/format";
 
 export default function DogDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -118,6 +119,8 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
           </div>
         )}
       </div>
+
+      <DogMedications dogId={id} />
 
       <DogPhotos dogId={id} />
 

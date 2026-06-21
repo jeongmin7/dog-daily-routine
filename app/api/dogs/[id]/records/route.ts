@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getUserId } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -8,11 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user?.id;
+  const userId = await getUserId(req);
   if (!userId) {
     return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
   }
@@ -42,11 +38,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user?.id;
+  const userId = await getUserId(req);
   if (!userId) {
     return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
   }

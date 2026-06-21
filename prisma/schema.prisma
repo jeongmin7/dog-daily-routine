@@ -20,6 +20,17 @@ model User {
   password String
   createdAt DateTime @default(now())
   dogs Dog[]
+  apiTokens ApiToken[]
+}
+
+model ApiToken {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name String
+  tokenHash String @unique
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
 }
 
 model Dog {

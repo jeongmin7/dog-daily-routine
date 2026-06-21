@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Btn } from "./ui";
 import { BackBar } from "./back-bar";
+import { ApiTokensClient } from "./api-tokens-client";
 
 export function SettingsClient({ name, email }: { name: string | null; email: string | null }) {
   const router = useRouter();
@@ -68,6 +69,9 @@ export function SettingsClient({ name, email }: { name: string | null; email: st
           </svg>
         </div>
       </div>
+
+      {/* 개인 API 토큰 */}
+      <ApiTokensClient />
 
       {/* 위험 구역 — 회원 탈퇴 */}
       <div className="card">

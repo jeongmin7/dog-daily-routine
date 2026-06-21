@@ -1,20 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/lib/api-auth", () => ({ getUserId: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     dog: { findFirst: vi.fn(), delete: vi.fn(), update: vi.fn() },
   },
 }));
 
-import { auth } from "@/lib/auth";
+import { getUserId } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { DELETE, GET, PATCH } from "@/app/api/dogs/[id]/route";
-import { ctx, jsonReq, SESSION } from "./helpers";
+import { ctx, jsonReq } from "./helpers";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(auth).mockResolvedValue(SESSION as never);
+  vi.mocked(getUserId).mockResolvedValue("user-1");
 });
 
 describe("GET /api/dogs/[id]", () => {

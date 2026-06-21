@@ -1,7 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useApp } from "@/app/providers";
+import { useQueries } from "@tanstack/react-query";
+import axios from "axios";
+import { useUserStore } from "@/lib/store";
+import { qk, useDogs } from "@/lib/queries";
+import type { DogRecord } from "@/lib/types";
 import { Btn } from "@/components/ui";
 import { DogAvatar } from "@/components/brand";
 import { RecordMetrics } from "@/components/record-card";
@@ -9,15 +13,27 @@ import { ageString, fmtDateKo, relativeDay, todayISO } from "@/lib/format";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { store } = useApp();
-  const { dogs, records, user } = store;
+  const user = useUserStore((s) => s.user);
+  const { data: dogs = [] } = useDogs();
+
+  // "최근 기록(전체)"용: 강아지별 기록을 병렬 쿼리로 모아 평탄화.
+  const recordQueries = useQueries({
+    queries: dogs.map((d) => ({
+      queryKey: qk.records(d.id),
+      queryFn: async () => {
+        const res = await axios.get(`/api/dogs/${d.id}/records`);
+        return (res.data?.data ?? []) as DogRecord[];
+      },
+    })),
+  });
+  const records = recordQueries.flatMap((q) => q.data ?? []);
   const recent = records.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 4);
   const dogName = (id: string) => dogs.find((d) => d.id === id)?.name || "";
 
   if (dogs.length === 0) {
     return (
       <div className="fade-in">
-        <div className="h1 mb-6">안녕하세요, {user.name || "보호자"}님</div>
+        <div className="h1 mb-6">안녕하세요, {user?.name || "보호자"}님</div>
         <div className="empty-box">
           <div className="empty-emoji">🐕</div>
           <div className="title-lg">아직 등록된 강아지가 없어요</div>
@@ -35,7 +51,7 @@ export default function DashboardPage() {
   return (
     <div className="fade-in">
       <div className="row between mb-6">
-        <div className="h1">안녕하세요, {user.name || "보호자"}님</div>
+        <div className="h1">안녕하세요, {user?.name || "보호자"}님</div>
         <Btn variant="outline" size="sm" onClick={() => router.push("/dogs/new")}>
           + 강아지 추가
         </Btn>

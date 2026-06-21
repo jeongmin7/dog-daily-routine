@@ -49,6 +49,36 @@ export type MedicationInput = {
   remainingCount?: number;
 };
 
+/* 지병 모니터링 (MVP 2) — 메타데이터 기반. */
+export type MetricInputType = "counter" | "diff" | "slider" | "number";
+export type DiseaseMetric = {
+  key: string;
+  diseaseKey: string;
+  label: string;
+  unit: string;
+  inputType: MetricInputType;
+  durationSec: number | null;
+  multiplier: number | null;
+  alertMin: number | null;
+  alertMax: number | null;
+  sortOrder: number;
+};
+export type Disease = { key: string; name: string; metrics: DiseaseMetric[] };
+export type DogDisease = {
+  id: string;
+  dogId: string;
+  diseaseKey: string;
+  createdAt: string;
+  disease: Disease;
+};
+export type Measurement = {
+  id: string;
+  dogId: string;
+  metricKey: string;
+  value: number;
+  measuredAt: string; // ISO
+};
+
 /* 사진 일지 — GET /api/dogs/[id]/photos 응답(data). */
 export type Photo = {
   id: string;

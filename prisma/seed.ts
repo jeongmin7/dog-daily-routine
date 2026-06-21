@@ -16,7 +16,64 @@ function isoDaysAgo(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// 지병/지표 마스터 데이터 — 앱 동작에 필요한 레퍼런스. 모든 환경에 항상 존재해야 함.
+// 공유 Neon DB라 db:seed 1회로 prod까지 반영. 재실행 안전(upsert).
+const DISEASES: { key: string; name: string }[] = [
+  { key: "heart", name: "심장병" },
+  { key: "kidney", name: "신장병" },
+  { key: "diabetes", name: "당뇨" },
+  { key: "joint", name: "관절염" },
+  { key: "pancreas", name: "췌장염" },
+  { key: "liver", name: "간질환" },
+  { key: "senior", name: "노령견" },
+];
+
+type MetricSeed = {
+  key: string;
+  diseaseKey: string;
+  label: string;
+  unit: string;
+  inputType: "counter" | "diff" | "slider" | "number";
+  durationSec?: number;
+  multiplier?: number;
+  alertMin?: number;
+  alertMax?: number;
+  sortOrder?: number;
+};
+
+const METRICS: MetricSeed[] = [
+  { key: "resp_rate", diseaseKey: "heart", label: "분당 호흡수", unit: "회/분", inputType: "counter", durationSec: 60, multiplier: 1, alertMax: 40, sortOrder: 1 },
+  { key: "heart_rate", diseaseKey: "heart", label: "분당 심박수", unit: "회/분", inputType: "counter", durationSec: 15, multiplier: 4, alertMin: 60, alertMax: 160, sortOrder: 2 },
+  { key: "kidney_water", diseaseKey: "kidney", label: "음수량", unit: "ml", inputType: "diff", sortOrder: 1 },
+  { key: "kidney_appetite", diseaseKey: "kidney", label: "식욕", unit: "점", inputType: "slider", alertMin: 2, sortOrder: 2 },
+  { key: "diabetes_glucose", diseaseKey: "diabetes", label: "혈당", unit: "mg/dL", inputType: "number", alertMin: 80, alertMax: 250, sortOrder: 1 },
+  { key: "diabetes_water", diseaseKey: "diabetes", label: "음수량", unit: "ml", inputType: "diff", sortOrder: 2 },
+  { key: "joint_limp", diseaseKey: "joint", label: "절뚝임 정도", unit: "점", inputType: "slider", alertMax: 4, sortOrder: 1 },
+  { key: "senior_vitality", diseaseKey: "senior", label: "활력도", unit: "점", inputType: "slider", alertMin: 2, sortOrder: 1 },
+  { key: "senior_cognition", diseaseKey: "senior", label: "인지 기능", unit: "점", inputType: "slider", alertMin: 2, sortOrder: 2 },
+];
+
+async function seedReference() {
+  for (const d of DISEASES) {
+    await prisma.disease.upsert({
+      where: { key: d.key },
+      update: { name: d.name },
+      create: d,
+    });
+  }
+  for (const m of METRICS) {
+    await prisma.diseaseMetric.upsert({
+      where: { key: m.key },
+      update: m,
+      create: m,
+    });
+  }
+  console.log(`Seeded reference: 지병 ${DISEASES.length}종 + 지표 ${METRICS.length}개`);
+}
+
 async function main() {
+  await seedReference();
+
   const password = await hashPassword(DEMO_PASSWORD);
   const user = await prisma.user.upsert({
     where: { email: DEMO_EMAIL },

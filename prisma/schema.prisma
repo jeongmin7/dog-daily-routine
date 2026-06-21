@@ -46,6 +46,49 @@ model Dog {
   records DogRecord[]
   photos Photo[]
   medications Medication[]
+  diseases DogDisease[]
+  measurements MeasurementSession[]
+}
+
+model Disease {
+  key String @id
+  name String
+  metrics DiseaseMetric[]
+  dogDiseases DogDisease[]
+}
+
+model DiseaseMetric {
+  key String @id
+  diseaseKey String
+  disease Disease @relation(fields: [diseaseKey], references: [key], onDelete: Cascade)
+  label String
+  unit String
+  inputType String
+  durationSec Int?
+  multiplier Int?
+  alertMin Int?
+  alertMax Int?
+  sortOrder Int @default(0)
+}
+
+model DogDisease {
+  id String @id @default(cuid())
+  dogId String
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  diseaseKey String
+  disease Disease @relation(fields: [diseaseKey], references: [key], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([dogId, diseaseKey])
+}
+
+model MeasurementSession {
+  id String @id @default(cuid())
+  dogId String
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  metricKey String
+  value Float
+  measuredAt DateTime @default(now())
 }
 
 model Medication {

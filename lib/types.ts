@@ -24,6 +24,31 @@ export type DogRecord = {
 export type RecordInput = Omit<DogRecord, "id" | "dogId">;
 export type DogInput = Omit<Dog, "id">;
 
+/* 약 관리 — GET /api/dogs/[id]/medications 응답(data). doses는 오늘(KST) 복용 슬롯. */
+export type MedicationDose = {
+  id: string;
+  medicationId: string;
+  date: string;
+  time: string;
+  takenAt: string;
+};
+export type Medication = {
+  id: string;
+  dogId: string;
+  name: string;
+  dosage: string | null;
+  times: string[]; // HH:MM
+  remainingCount: number | null;
+  createdAt: string;
+  doses: MedicationDose[];
+};
+export type MedicationInput = {
+  name: string;
+  dosage?: string;
+  times: string[];
+  remainingCount?: number;
+};
+
 /* 사진 일지 — GET /api/dogs/[id]/photos 응답(data). */
 export type Photo = {
   id: string;

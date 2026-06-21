@@ -18,6 +18,8 @@ import type {
   DogInput,
   DogRecord,
   DogStats,
+  Medication,
+  MedicationInput,
   Photo,
   RecordInput,
 } from "./types";
@@ -31,6 +33,7 @@ export const qk = {
   records: (dogId: string) => ["dogs", dogId, "records"] as const,
   stats: (dogId: string) => ["dogs", dogId, "stats"] as const,
   photos: (dogId: string) => ["dogs", dogId, "photos"] as const,
+  medications: (dogId: string) => ["dogs", dogId, "medications"] as const,
   tokens: ["tokens"] as const,
 };
 
@@ -224,6 +227,65 @@ export function useDeletePhoto(dogId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.photos(dogId) });
+    },
+  });
+}
+
+/* ── 약 관리 ── */
+export function useMedications(dogId: string) {
+  return useQuery({
+    queryKey: qk.medications(dogId),
+    queryFn: async (): Promise<Medication[]> => {
+      const res = await axios.get(`/api/dogs/${dogId}/medications`);
+      return res.data?.data ?? [];
+    },
+  });
+}
+
+export function useAddMedication(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: MedicationInput): Promise<Medication> => {
+      const res = await axios.post(`/api/dogs/${dogId}/medications`, input);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.medications(dogId) });
+    },
+  });
+}
+
+export function useDeleteMedication(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (medId: string): Promise<void> => {
+      await axios.delete(`/api/dogs/${dogId}/medications/${medId}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.medications(dogId) });
+    },
+  });
+}
+
+// 오늘 슬롯 복용 체크/해제 토글.
+export function useToggleDose(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      medId,
+      time,
+      taken,
+    }: {
+      medId: string;
+      time: string;
+      taken: boolean; // true=복용처리, false=취소
+    }): Promise<void> => {
+      const url = `/api/dogs/${dogId}/medications/${medId}/doses`;
+      if (taken) await axios.post(url, { time });
+      else await axios.delete(url, { data: { time } });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.medications(dogId) });
     },
   });
 }

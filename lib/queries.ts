@@ -18,6 +18,7 @@ import type {
   DogInput,
   DogRecord,
   DogStats,
+  Photo,
   RecordInput,
 } from "./types";
 
@@ -29,6 +30,7 @@ export const qk = {
   dog: (id: string) => ["dogs", id] as const,
   records: (dogId: string) => ["dogs", dogId, "records"] as const,
   stats: (dogId: string) => ["dogs", dogId, "stats"] as const,
+  photos: (dogId: string) => ["dogs", dogId, "photos"] as const,
   tokens: ["tokens"] as const,
 };
 
@@ -185,6 +187,43 @@ export function useDeleteRecord(dogId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.records(dogId) });
       qc.invalidateQueries({ queryKey: qk.stats(dogId) });
+    },
+  });
+}
+
+/* ── 사진 일지 ── */
+export function usePhotos(dogId: string) {
+  return useQuery({
+    queryKey: qk.photos(dogId),
+    queryFn: async (): Promise<Photo[]> => {
+      const res = await axios.get(`/api/dogs/${dogId}/photos`);
+      return res.data?.data ?? [];
+    },
+  });
+}
+
+export function useUploadPhoto(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (form: FormData): Promise<Photo> => {
+      // FormData를 주면 axios가 multipart 경계를 자동 설정.
+      const res = await axios.post(`/api/dogs/${dogId}/photos`, form);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.photos(dogId) });
+    },
+  });
+}
+
+export function useDeletePhoto(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (photoId: string): Promise<void> => {
+      await axios.delete(`/api/dogs/${dogId}/photos/${photoId}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.photos(dogId) });
     },
   });
 }

@@ -8,6 +8,7 @@ import { BackBar } from "@/components/back-bar";
 import { DogAvatar } from "@/components/brand";
 import { RecordCard } from "@/components/record-card";
 import { WeeklyStats } from "@/components/stat-chart";
+import { DogPhotos } from "@/components/dog-photos";
 import { ageString, hasVal } from "@/lib/format";
 
 export default function DogDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -117,6 +118,8 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
           </div>
         )}
       </div>
+
+      <DogPhotos dogId={id} />
 
       <div>
         <div className="title-lg mb-4">최근 기록</div>

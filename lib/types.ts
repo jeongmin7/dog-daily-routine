@@ -24,6 +24,15 @@ export type DogRecord = {
 export type RecordInput = Omit<DogRecord, "id" | "dogId">;
 export type DogInput = Omit<Dog, "id">;
 
+/* 사진 일지 — GET /api/dogs/[id]/photos 응답(data). */
+export type Photo = {
+  id: string;
+  dogId: string;
+  url: string;
+  caption: string | null;
+  createdAt: string; // ISO
+};
+
 /* 개인 API 토큰 — GET /api/tokens 응답(data). 해시·평문은 절대 미포함.
    생성(POST) 응답만 평문 token을 1회 포함(ApiTokenCreated). */
 export type ApiToken = {

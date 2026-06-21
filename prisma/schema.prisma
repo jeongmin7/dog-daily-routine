@@ -44,6 +44,16 @@ model Dog {
   createdAt DateTime @default(now())
   archivedAt DateTime?
   records DogRecord[]
+  photos Photo[]
+}
+
+model Photo {
+  id String @id @default(cuid())
+  dogId String
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  url String
+  caption String?
+  createdAt DateTime @default(now())
 }
 
 model DogRecord {

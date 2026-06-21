@@ -2,16 +2,31 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { useApp } from "@/app/providers";
+import {
+  useDeleteRecord,
+  useDog,
+  useRecords,
+  useUpdateRecord,
+} from "@/lib/queries";
 import { RecordForm } from "@/components/record-form";
 import { Btn } from "@/components/ui";
 
 export default function RecordEditPage({ params }: { params: Promise<{ id: string; recordId: string }> }) {
   const { id, recordId } = use(params);
   const router = useRouter();
-  const { store, updateRecord, deleteRecord } = useApp();
-  const dog = store.dogs.find((d) => d.id === id);
-  const record = store.records.find((r) => r.id === recordId);
+  const { data: dog, isPending: dogPending } = useDog(id);
+  const { data: records = [], isPending: recordsPending } = useRecords(id);
+  const updateRecord = useUpdateRecord(id);
+  const deleteRecord = useDeleteRecord(id);
+  const record = records.find((r) => r.id === recordId);
+
+  if (dogPending || recordsPending) {
+    return (
+      <div className="full-center" style={{ minHeight: 300 }}>
+        <div className="caption">불러오는 중…</div>
+      </div>
+    );
+  }
 
   if (!dog || !record) {
     return (
@@ -31,11 +46,11 @@ export default function RecordEditPage({ params }: { params: Promise<{ id: strin
       record={record}
       onCancel={() => router.push(`/dogs/${id}`)}
       onSave={async (rec) => {
-        await updateRecord(recordId, rec);
+        await updateRecord.mutateAsync({ recordId, rec });
         router.push(`/dogs/${id}`);
       }}
       onDelete={async () => {
-        await deleteRecord(recordId);
+        await deleteRecord.mutateAsync(recordId);
         router.push(`/dogs/${id}`);
       }}
     />

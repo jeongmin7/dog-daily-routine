@@ -1,53 +1,17 @@
 "use client";
 
-/* 앱 전역 상태: mock 스토어 + 인증.
-   ⚠️ 임시 — 백엔드 연결 시 이 컨텍스트의 액션들을 실제 API/세션으로 교체. */
+/* 앱 전역 프로바이더.
+   - 서버 상태: TanStack Query (lib/queries.ts의 훅들이 사용).
+   - 클라 상태: zustand(lib/store.ts) — 서버 세션 유저를 한 번 시드한다.
+   인증 가드/세션은 서버 레이아웃 auth() + NextAuth가 담당(여기선 표시용 유저만). */
 
-type SessionUser = {
-  name?: string | null;
-  email?: string | null;
-};
-
+import { useState } from "react";
 import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
-import axios from "axios";
-import type { Dog, DogRecord, RecordInput, Store } from "@/lib/types";
-import { buildSeed, loadStore, saveStore } from "@/lib/mock-store";
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import { useUserStore, type SessionUser } from "@/lib/store";
 
-type AppContextValue = {
-  store: Store;
-  authed: boolean;
-  authReady: boolean;
-  login: (email: string) => void;
-  logout: () => void;
-  addDog: (dog: Omit<Dog, "id">) => Promise<Dog>;
-  deleteDog: (id: string) => Promise<void>;
-  addRecord: (dogId: string, rec: RecordInput) => Promise<DogRecord>;
-  updateRecord: (id: string, rec: RecordInput) => Promise<DogRecord>;
-  deleteRecord: (id: string) => Promise<void>;
-  resetData: () => void;
-};
-
-const AppContext = createContext<AppContextValue | null>(null);
-
-const AUTH_KEY = "haru.auth";
-
-function withSessionUser(s: Store, u: SessionUser | null): Store {
-  if (!u) return s;
-  return {
-    ...s,
-    user: {
-      ...s.user,
-      name: u.name ?? s.user.name,
-      email: u.email ?? s.user.email,
-    },
-  };
-}
 export function AppProvider({
   children,
   initialUser,
@@ -55,150 +19,26 @@ export function AppProvider({
   children: React.ReactNode;
   initialUser: SessionUser | null;
 }) {
-  const [store, setStore] = useState<Store>(() => withSessionUser(buildSeed(), initialUser));
-  const [hydrated, setHydrated] = useState(false);
-  const [authed, setAuthed] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
-
-  // 마운트: 세션·기록은 localStorage(mock)에서, 강아지는 실제 API(GET /api/dogs)에서.
-  useEffect(() => {
-    setStore(withSessionUser(loadStore(), initialUser));
-    setHydrated(true);
-    try {
-      setAuthed(sessionStorage.getItem(AUTH_KEY) === "1");
-    } catch {
-      /* ignore */
-    }
-    setAuthReady(true);
-
-    // 강아지 목록을 DB에서 가져온 뒤, 각 강아지의 기록을 병렬로 가져와
-    // mock 시드를 실제 데이터로 덮어쓴다. (updateRecord/deleteRecord는 아직 mock)
-    axios
-      .get("/api/dogs")
-      .then(async (res) => {
-        const dogs: Dog[] = res.data?.data ?? [];
-        const recordsByDog = await Promise.all(
-          dogs.map((d) =>
-            axios
-              .get(`/api/dogs/${d.id}/records`)
-              .then((r) => (r.data?.data ?? []) as DogRecord[])
-              .catch(() => [] as DogRecord[]),
-          ),
-        );
-        const records = recordsByDog.flat();
-        setStore((s) => ({ ...s, dogs, records }));
-      })
-      .catch(() => {
-        /* 네트워크 오류 시 기존(빈) 목록 유지 */
-      });
-  }, []);
-
-  // 변경 시 영속화
-  useEffect(() => {
-    if (hydrated) saveStore(store);
-  }, [store, hydrated]);
-
-  const login = useCallback((email: string) => {
-    setStore((s) => ({ ...s, user: { ...s.user, email } }));
-    try {
-      sessionStorage.setItem(AUTH_KEY, "1");
-    } catch {
-      /* ignore */
-    }
-    setAuthed(true);
-  }, []);
-
-  const logout = useCallback(() => {
-    try {
-      sessionStorage.removeItem(AUTH_KEY);
-    } catch {
-      /* ignore */
-    }
-    setAuthed(false);
-  }, []);
-
-  const addDog = useCallback(async (dog: Omit<Dog, "id">): Promise<Dog> => {
-    const res = await axios.post("/api/dogs", dog);
-    const created = res.data.data as Dog;
-    setStore((s) => ({ ...s, dogs: [...s.dogs, created] }));
-    return created;
-  }, []);
-
-  const deleteDog = useCallback(async (id: string): Promise<void> => {
-    await axios.delete(`/api/dogs/${id}`);
-    // 서버는 cascade로 강아지+기록을 지우므로, 화면에서도 둘 다 제거.
-    setStore((s) => ({
-      ...s,
-      dogs: s.dogs.filter((d) => d.id !== id),
-      records: s.records.filter((r) => r.dogId !== id),
-    }));
-  }, []);
-
-  const addRecord = useCallback(
-    async (dogId: string, rec: RecordInput): Promise<DogRecord> => {
-      const res = await axios.post(`/api/dogs/${dogId}/records`, rec);
-      const created = res.data.data as DogRecord;
-      setStore((s) => ({ ...s, records: [...s.records, created] }));
-      return created;
-    },
-    [],
+  // QueryClient는 컴포넌트 생애 동안 단일 인스턴스로 유지.
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            // 포커스마다 재요청하지 않음(과한 네트워크 방지). 1분간 fresh.
+            refetchOnWindowFocus: false,
+            staleTime: 60 * 1000,
+          },
+        },
+      }),
   );
 
-  const updateRecord = useCallback(
-    async (id: string, rec: RecordInput): Promise<DogRecord> => {
-      const target = store.records.find((r) => r.id === id);
-      if (!target) throw new Error("기록을 찾을 수 없습니다.");
-      const res = await axios.patch(
-        `/api/dogs/${target.dogId}/records/${id}`,
-        rec,
-      );
-      const updated = res.data.data as DogRecord;
-      setStore((s) => ({
-        ...s,
-        records: s.records.map((r) => (r.id === id ? updated : r)),
-      }));
-      return updated;
-    },
-    [store.records],
-  );
-
-  const deleteRecord = useCallback(
-    async (id: string): Promise<void> => {
-      const target = store.records.find((r) => r.id === id);
-      if (!target) throw new Error("기록을 찾을 수 없습니다.");
-      await axios.delete(`/api/dogs/${target.dogId}/records/${id}`);
-      setStore((s) => ({ ...s, records: s.records.filter((r) => r.id !== id) }));
-    },
-    [store.records],
-  );
-
-  const resetData = useCallback(() => {
-    setStore(buildSeed());
-  }, []);
+  // 서버에서 받은 세션 유저를 zustand에 한 번만 시드(초기 렌더 전).
+  useState(() => {
+    if (initialUser) useUserStore.setState({ user: initialUser });
+  });
 
   return (
-    <AppContext.Provider
-      value={{
-        store,
-        authed,
-        authReady,
-        login,
-        logout,
-        addDog,
-        deleteDog,
-        addRecord,
-        updateRecord,
-        deleteRecord,
-        resetData,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-}
-
-export function useApp(): AppContextValue {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error("useApp must be used within <AppProvider>");
-  return ctx;
 }

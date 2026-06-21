@@ -2,15 +2,23 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { useApp } from "@/app/providers";
+import { useAddRecord, useDog } from "@/lib/queries";
 import { RecordForm } from "@/components/record-form";
 import { Btn } from "@/components/ui";
 
 export default function RecordNewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { store, addRecord } = useApp();
-  const dog = store.dogs.find((d) => d.id === id);
+  const { data: dog, isPending } = useDog(id);
+  const addRecord = useAddRecord(id);
+
+  if (isPending) {
+    return (
+      <div className="full-center" style={{ minHeight: 300 }}>
+        <div className="caption">불러오는 중…</div>
+      </div>
+    );
+  }
 
   if (!dog) {
     return (
@@ -29,7 +37,7 @@ export default function RecordNewPage({ params }: { params: Promise<{ id: string
       dog={dog}
       onCancel={() => router.push(`/dogs/${id}`)}
       onSave={async (rec) => {
-        await addRecord(id, rec);
+        await addRecord.mutateAsync(rec);
         router.push(`/dogs/${id}`);
       }}
     />

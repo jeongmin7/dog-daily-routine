@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useApp } from "@/app/providers";
+import { useAddDog } from "@/lib/queries";
 import { Btn, Field, TextInput } from "@/components/ui";
 import { BackBar } from "@/components/back-bar";
 import { todayISO } from "@/lib/format";
 
 export default function DogNewPage() {
   const router = useRouter();
-  const { addDog } = useApp();
+  const addDog = useAddDog();
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
   const [birth, setBirth] = useState("");
@@ -27,7 +27,7 @@ export default function DogNewPage() {
     if (Object.keys(next).length) return;
     setBusy(true);
     try {
-      const dog = await addDog({
+      const dog = await addDog.mutateAsync({
         name: name.trim(),
         breed: breed.trim() || undefined,
         birthdate: birth || undefined,

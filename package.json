@@ -8,7 +8,11 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "eslint .",
     "postinstall": "prisma generate"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -29,6 +33,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.9",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.9"

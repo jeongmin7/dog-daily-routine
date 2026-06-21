@@ -71,12 +71,13 @@
 
 ## 6. 새 컴퓨터에서 셋업
 1. `npm install`
-2. **`.env` 생성** (gitignore됨, 절대 커밋 X) — 2개 필요:
+2. **`.env` 생성** (gitignore됨, 절대 커밋 X) — `cp .env.example .env` 후 값 채우기. 2개 필요:
    ```
    DATABASE_URL="postgresql://...neon.tech/neondb?sslmode=require"   # ⚠️ 직접(non-pooled) 연결!
    AUTH_SECRET="..."                                                  # openssl rand -base64 32
    ```
 3. `npx prisma generate` (필요시 `npx prisma migrate dev`)
+- 품질 게이트: `npm run lint`(ESLint flat config, eslint 9.x + eslint-config-next) · `npm test`(vitest) · `npx tsc --noEmit`. **PR마다 GitHub Actions(`.github/workflows/ci.yml`)가 tsc+lint+test 자동 실행**(DB 미연결, prisma 모킹).
 4. `npm run dev` → http://localhost:3000
 
 ## 7. ⚠️ 이미 겪은 함정 (반복 금지)

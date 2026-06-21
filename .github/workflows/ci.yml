@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+# DB에 연결하지 않는 검증만 수행(typecheck·lint·test). 테스트는 prisma를 모킹한다.
+# DATABASE_URL은 postinstall의 `prisma generate`(연결 안 함)가 config 로드 시 필요해서 더미로 둔다.
+env:
+  DATABASE_URL: "postgresql://user:pass@localhost:5432/db?sslmode=require"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm test

@@ -54,6 +54,21 @@ export function SettingsClient({ name, email }: { name: string | null; email: st
         </div>
       </div>
 
+      {/* 보관함 진입 */}
+      <div className="card mb-6 dog-card" onClick={() => router.push("/archive")}>
+        <div className="row between">
+          <div>
+            <div className="title-md">보관함</div>
+            <div className="caption" style={{ marginTop: 2 }}>
+              보관한 강아지를 보고 복원할 수 있어요
+            </div>
+          </div>
+          <svg width="8" height="14" viewBox="0 0 8 14" style={{ flexShrink: 0 }}>
+            <path d="M1 1l6 6-6 6" stroke="var(--muted-fg)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      </div>
+
       {/* 위험 구역 — 회원 탈퇴 */}
       <div className="card">
         <div className="title-md mb-1 text-destructive">회원 탈퇴</div>

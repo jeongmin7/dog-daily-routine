@@ -17,6 +17,7 @@ import type { Dog, DogInput, DogRecord, DogStats, RecordInput } from "./types";
    계층 구조(["dogs", id, "records"])라 상위 키 invalidate가 하위까지 무효화한다. */
 export const qk = {
   dogs: ["dogs"] as const,
+  dogsArchived: ["dogs", "archived"] as const,
   dog: (id: string) => ["dogs", id] as const,
   records: (dogId: string) => ["dogs", dogId, "records"] as const,
   stats: (dogId: string) => ["dogs", dogId, "stats"] as const,
@@ -25,6 +26,10 @@ export const qk = {
 /* ── fetchers ── */
 async function fetchDogs(): Promise<Dog[]> {
   const res = await axios.get("/api/dogs");
+  return res.data?.data ?? [];
+}
+async function fetchArchivedDogs(): Promise<Dog[]> {
+  const res = await axios.get("/api/dogs", { params: { archived: "true" } });
   return res.data?.data ?? [];
 }
 async function fetchDog(id: string): Promise<Dog> {
@@ -43,6 +48,10 @@ async function fetchStats(id: string): Promise<DogStats> {
 /* ── 쿼리 훅 ── */
 export function useDogs() {
   return useQuery({ queryKey: qk.dogs, queryFn: fetchDogs });
+}
+
+export function useArchivedDogs() {
+  return useQuery({ queryKey: qk.dogsArchived, queryFn: fetchArchivedDogs });
 }
 
 export function useDog(id: string) {
@@ -81,6 +90,28 @@ export function useAddDog() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.dogs });
+    },
+  });
+}
+
+// 보관(archived:true) / 복원(archived:false) 토글.
+export function useSetDogArchived() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      archived,
+    }: {
+      id: string;
+      archived: boolean;
+    }): Promise<Dog> => {
+      const res = await axios.patch(`/api/dogs/${id}`, { archived });
+      return res.data.data;
+    },
+    onSuccess: (_data, { id }) => {
+      // 활성 목록 ↔ 보관함 양쪽이 바뀌므로 둘 다 무효화.
+      qc.invalidateQueries({ queryKey: qk.dogs });
+      qc.removeQueries({ queryKey: qk.dog(id) });
     },
   });
 }

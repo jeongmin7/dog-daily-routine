@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDeleteDog, useDog, useDogStats, useRecords } from "@/lib/queries";
+import { useDog, useDogStats, useRecords, useSetDogArchived } from "@/lib/queries";
 import { Btn } from "@/components/ui";
 import { BackBar } from "@/components/back-bar";
 import { DogAvatar } from "@/components/brand";
@@ -17,10 +17,10 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
   const { data: records = [] } = useRecords(id);
   // 주간 통계는 클라 계산 대신 서버 집계(GET /api/dogs/[id]/stats)에서 받는다.
   const { data: stats } = useDogStats(id);
-  const deleteDog = useDeleteDog();
+  const archiveDog = useSetDogArchived();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const busy = deleteDog.isPending;
+  const busy = archiveDog.isPending;
 
   // 로딩 중에는 "찾을 수 없어요"를 깜빡 띄우지 않도록 대기.
   if (dogPending) {
@@ -45,13 +45,13 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
   const sortedRecords = records.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
   const age = ageString(dog.birthdate);
 
-  async function handleDelete() {
+  async function handleArchive() {
     setError(null);
     try {
-      await deleteDog.mutateAsync(dog!.id);
+      await archiveDog.mutateAsync({ id: dog!.id, archived: true });
       router.push("/");
     } catch {
-      setError("삭제에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setError("보관에 실패했어요. 잠시 후 다시 시도해주세요.");
     }
   }
 
@@ -131,11 +131,11 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
-      {/* 위험 구역 — 강아지 삭제 */}
+      {/* 강아지 보관 — 목록에서 숨기고 보관함으로. 영구 삭제는 보관함에서. */}
       <div className="card">
-        <div className="title-md mb-1 text-destructive">강아지 삭제</div>
+        <div className="title-md mb-1">강아지 보관</div>
         <div className="caption mb-4">
-          잘못 등록했을 때 정정하는 용도예요. 삭제하면 {dog.name}의 정보와 모든 기록이 영구 삭제되고, 되돌릴 수 없어요.
+          {dog.name}을(를) 보관하면 목록에서 숨겨지고 기록은 그대로 보관함에 남아요. 언제든 복원할 수 있고, 영구 삭제는 보관함에서 할 수 있어요.
         </div>
 
         {error && (
@@ -145,20 +145,20 @@ export default function DogDetailPage({ params }: { params: Promise<{ id: string
         )}
 
         {!confirming ? (
-          <Btn variant="destructive" block onClick={() => setConfirming(true)}>
-            강아지 삭제하기
+          <Btn variant="outline" block onClick={() => setConfirming(true)}>
+            보관하기
           </Btn>
         ) : (
           <div className="stack gap-3">
             <div className="body" style={{ fontWeight: 600 }}>
-              정말 {dog.name}을(를) 삭제할까요?
+              {dog.name}을(를) 보관할까요?
             </div>
             <div className="row gap-2">
               <Btn variant="outline" block disabled={busy} onClick={() => setConfirming(false)}>
                 취소
               </Btn>
-              <Btn variant="destructive" block loading={busy} loadingText="삭제 중…" onClick={handleDelete}>
-                삭제 확정
+              <Btn block loading={busy} loadingText="보관 중…" onClick={handleArchive}>
+                보관 확정
               </Btn>
             </div>
           </div>

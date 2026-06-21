@@ -57,9 +57,10 @@
 - ✅ 기본 CRUD ①~⑥ 완료(모두 +UI, production): ① `GET /api/dogs` · ② `POST /api/dogs` · ③ `GET /api/dogs/[id]` · ④ 기록 `GET`+`POST` · ⑤ 기록 `PATCH`+`DELETE` · ⑥ `DELETE /api/dogs/[id]`.
 - ✅ **ⓐ 주간 통계 백엔드화 완료** (2026-06-16, production): `GET /api/dogs/[id]/stats` — 소유확인 + **한국(UTC+9) 기준 7일 범위**(`date`가 ISO `YYYY-MM-DD` String이라 `gte` **문자열 사전순 비교**가 곧 날짜 비교) + 집계. 지표별 집계 = **유량/저량 구분**: meal `avg`·walk `sum`(+avg)·weight `latest`+`change`. **평균/합계는 null(미기록) 제외, 분모 = 기록한 날 수**(7 아님), 빈 지표는 `null`. UI: `lib/types.ts`에 `DogStats`, `WeeklyStats`가 `store.records` 클라계산 대신 stats API의 `series`/요약값 사용(`dogs/[id]/page.tsx`가 마운트 시 fetch). 브랜치 `feat/dogs-stats-api`(API+UI 한 브랜치, CLI 직접 머지). ✅ **로컬·production 런타임 검증 모두 완료**(2026-06-21, chrome-devtools MCP로 차트 숫자 눈 확인 — 식사 avg/산책 sum/체중 latest 입력값 일치).
 - ✅ **ⓑ API 회귀 테스트 한 배치 완료** (2026-06-21, 브랜치 `feat/api-regression-tests`): **vitest**(`vitest.config.ts`, node env, `@` 별칭) 도입. 전략은 위 (A) — **라우트 핸들러를 직접 import + `@/lib/auth`·`@/lib/prisma`를 `vi.mock`**(서비스 레이어 추출 안 함). `tests/` 4파일 **20개**: dogs(GET/POST), dog-id(GET/DELETE), records(GET/POST), record-id(PATCH/DELETE). 커버리지 = **소유 스코프**(`where {id,userId}` 호출 단언, 남의 것 404), **인증**(세션 없으면 401), **검증**(date 필수 400·잘못된 JSON 400·이름 필수 400), **mass-assignment 차단**(POST는 userId/dogId를 세션·검증된 dog.id로 주입, PATCH는 화이트리스트 외 필드 update에 미전달). 뮤테이션 테스트로 회귀 포착 확인(소유확인에서 userId 빼면 빨강). 실행: `npm test`. **추가 기능 PR 전 `npm test` 돌릴 것.**
+- ✅ **soft delete(추억 보관) 완료** (2026-06-21, 브랜치 `feat/dogs-soft-delete`, 로컬 런타임 검증 완료): 강아지 한정. `Dog.archivedAt DateTime?` 추가(마이그레이션 `add_dog_archived_at`). `GET /api/dogs`는 활성(`archivedAt: null`)만, `?archived=true`면 보관함. `PATCH /api/dogs/[id]` 신규 = `{archived:boolean}` 보관/복원(소유확인 후, boolean 아니면 400). `DELETE`는 그대로 영구삭제(보관함에서만). react-query에 `useArchivedDogs`/`useSetDogArchived` 추가(`qk.dogs` invalidate가 prefix로 보관함까지 커버). UI: 상세 "위험 구역" 삭제→**보관하기**로 교체, **`/archive`** 보관함 화면(복원+영구삭제 2단계), 설정에 보관함 링크. 테스트 5개 추가(총 25). 설계 spec: `docs/superpowers/specs/2026-06-21-dogs-soft-delete-design.md`.
 - ⓒ seed 스크립트(`prisma/seed.ts`) — **선택.** 데모 데이터(강아지·기록) 재생성용.
-- 2단계 후보(MVP 0 이후): 인증 API Bearer 토큰 분리(AGENTS.md), soft delete(`Dog.archivedAt`로 "추억 보관").
-- 첫 마디 트리거: "2단계 시작"(Bearer/soft delete) · 또는 seed 스크립트.
+- 남은 2단계 후보: 인증 API Bearer 토큰 분리(AGENTS.md) — 범위 큼(공개/모바일 API 시나리오 신설).
+- 첫 마디 트리거: "Bearer 시작" · 또는 seed 스크립트.
 
 ## 5. 아키텍처 / 규칙
 - **데이터(서버 상태)**: `lib/prisma.ts`(싱글톤) → Neon. 클라는 `lib/queries.ts`의 react-query 훅으로만 접근(직접 axios/`useEffect` fetch 금지). 새 엔드포인트 추가 시 fetcher + 쿼리/뮤테이션 훅을 여기 추가하고, 쓰기 후엔 관련 `qk` 키를 invalidate.

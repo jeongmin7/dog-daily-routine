@@ -48,6 +48,7 @@ model Dog {
   medications Medication[]
   diseases DogDisease[]
   measurements MeasurementSession[]
+  feedAnalyses FeedAnalysis[]
 }
 
 model Disease {
@@ -138,4 +139,16 @@ model DogRecord {
 updatedAt DateTime @updatedAt
 }
 
-
+model FeedAnalysis {
+  id        String   @id @default(cuid())
+  dogId     String
+  dog       Dog      @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  rating    Int
+  summary   String
+  nutrients Json
+  cautions  Json
+  benefits  Json
+  model     String
+  createdAt DateTime @default(now())
+}

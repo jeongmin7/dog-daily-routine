@@ -88,6 +88,23 @@ export type Photo = {
   createdAt: string; // ISO
 };
 
+/* 사료 분석 (MVP 3) — GET /api/dogs/[id]/feed-analyses 응답(data). */
+export type FeedAnalysisNutrient = { label: string; value: string };
+export type FeedAnalysisCaution = { ingredient: string; reason: string };
+
+export type FeedAnalysis = {
+  id: string;
+  dogId: string;
+  imageUrl: string;
+  rating: number;
+  summary: string;
+  nutrients: FeedAnalysisNutrient[];
+  cautions: FeedAnalysisCaution[];
+  benefits: string[];
+  model: string;
+  createdAt: string; // ISO
+};
+
 /* 개인 API 토큰 — GET /api/tokens 응답(data). 해시·평문은 절대 미포함.
    생성(POST) 응답만 평문 token을 1회 포함(ApiTokenCreated). */
 export type ApiToken = {

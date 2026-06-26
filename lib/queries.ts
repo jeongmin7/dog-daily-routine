@@ -20,6 +20,7 @@ import type {
   DogInput,
   DogRecord,
   DogStats,
+  FeedAnalysis,
   Measurement,
   Medication,
   MedicationInput,
@@ -36,6 +37,7 @@ export const qk = {
   records: (dogId: string) => ["dogs", dogId, "records"] as const,
   stats: (dogId: string) => ["dogs", dogId, "stats"] as const,
   photos: (dogId: string) => ["dogs", dogId, "photos"] as const,
+  feedAnalyses: (dogId: string) => ["dogs", dogId, "feed-analyses"] as const,
   medications: (dogId: string) => ["dogs", dogId, "medications"] as const,
   diseases: ["diseases"] as const,
   dogDiseases: (dogId: string) => ["dogs", dogId, "diseases"] as const,
@@ -234,6 +236,45 @@ export function useDeletePhoto(dogId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.photos(dogId) });
+    },
+  });
+}
+
+/* ── 사료 분석 (MVP 3) ── */
+export function useFeedAnalyses(dogId: string) {
+  return useQuery({
+    queryKey: qk.feedAnalyses(dogId),
+    queryFn: async (): Promise<FeedAnalysis[]> => {
+      const res = await axios.get(`/api/dogs/${dogId}/feed-analyses`);
+      return res.data?.data ?? [];
+    },
+  });
+}
+
+export function useCreateFeedAnalysis(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File): Promise<FeedAnalysis> => {
+      const form = new FormData();
+      form.set("file", file);
+      // FormData를 주면 axios가 multipart 경계를 자동 설정.
+      const res = await axios.post(`/api/dogs/${dogId}/feed-analyses`, form);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.feedAnalyses(dogId) });
+    },
+  });
+}
+
+export function useDeleteFeedAnalysis(dogId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (analysisId: string): Promise<void> => {
+      await axios.delete(`/api/dogs/${dogId}/feed-analyses/${analysisId}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.feedAnalyses(dogId) });
     },
   });
 }

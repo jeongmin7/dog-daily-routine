@@ -77,6 +77,16 @@ describe("POST feed-analyses", () => {
     const res = await POST(postReq(imageForm()), { params });
     expect(res.status).toBe(401);
   });
+  it("남의 강아지면 404", async () => {
+    vi.mocked(getUserId).mockResolvedValue("u1");
+    vi.mocked(prisma.dog.findFirst).mockResolvedValue(null as never);
+    const res = await POST(postReq(imageForm()), { params });
+    expect(res.status).toBe(404);
+    expect(vi.mocked(prisma.dog.findFirst).mock.calls[0][0]?.where).toEqual({
+      id: "dog1",
+      userId: "u1",
+    });
+  });
   it("파일 없으면 400", async () => {
     vi.mocked(getUserId).mockResolvedValue("u1");
     vi.mocked(prisma.dog.findFirst).mockResolvedValue({ id: "dog1" } as never);

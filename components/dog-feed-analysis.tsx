@@ -22,6 +22,15 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
   function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
     e.target.value = "";
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      alert("이미지 파일만 올릴 수 있어요.");
+      return;
+    }
+    if (f.size > 4 * 1024 * 1024) {
+      alert("이미지는 4MB 이하만 가능해요.");
+      return;
+    }
     setFile(f);
   }
 

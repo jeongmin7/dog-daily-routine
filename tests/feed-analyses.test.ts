@@ -4,7 +4,7 @@ vi.mock("@/lib/api-auth", () => ({ getUserId: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     dog: { findFirst: vi.fn() },
-    feedAnalysis: { findMany: vi.fn(), create: vi.fn() },
+    feedAnalysis: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), delete: vi.fn() },
   },
 }));
 vi.mock("@vercel/blob", () => ({ put: vi.fn(), del: vi.fn() }));
@@ -127,5 +127,47 @@ describe("POST feed-analyses", () => {
     expect(res.status).toBe(502);
     expect(del).toHaveBeenCalledWith("https://blob/label.jpg");
     expect(prisma.feedAnalysis.create).not.toHaveBeenCalled();
+  });
+});
+
+import { DELETE } from "@/app/api/dogs/[id]/feed-analyses/[analysisId]/route";
+
+const delParams = Promise.resolve({ id: "dog1", analysisId: "a1" });
+
+describe("DELETE feed-analysis", () => {
+  it("인증 없으면 401", async () => {
+    (getUserId as any).mockResolvedValue(null);
+    const res = await DELETE(new Request("http://t"), { params: delParams });
+    expect(res.status).toBe(401);
+  });
+  it("남의 강아지면 404", async () => {
+    (getUserId as any).mockResolvedValue("u1");
+    (prisma.dog.findFirst as any).mockResolvedValue(null);
+    const res = await DELETE(new Request("http://t"), { params: delParams });
+    expect(res.status).toBe(404);
+  });
+  it("남의 분석이면 404", async () => {
+    (getUserId as any).mockResolvedValue("u1");
+    (prisma.dog.findFirst as any).mockResolvedValue({ id: "dog1" });
+    (prisma.feedAnalysis.findFirst as any).mockResolvedValue(null);
+    const res = await DELETE(new Request("http://t"), { params: delParams });
+    expect(res.status).toBe(404);
+  });
+  it("정상: blob del 후 삭제 200", async () => {
+    (getUserId as any).mockResolvedValue("u1");
+    (prisma.dog.findFirst as any).mockResolvedValue({ id: "dog1" });
+    (prisma.feedAnalysis.findFirst as any).mockResolvedValue({
+      id: "a1",
+      dogId: "dog1",
+      imageUrl: "https://blob/x.jpg",
+    });
+    (prisma.feedAnalysis.delete as any).mockResolvedValue({});
+    const { del } = await import("@vercel/blob");
+    const res = await DELETE(new Request("http://t"), { params: delParams });
+    expect(res.status).toBe(200);
+    expect(del).toHaveBeenCalledWith("https://blob/x.jpg");
+    expect((prisma.feedAnalysis.findFirst as any).mock.calls[0][0].where).toEqual(
+      { id: "a1", dogId: "dog1" },
+    );
   });
 });

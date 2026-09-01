@@ -55,6 +55,35 @@
   }
 }
 
+/* ───────────────────────────────────────────────────────────
+   위 토큰을 Tailwind 테마로 노출 → text-primary / bg-card / border-border …
+   `inline`이라 유틸리티가 값을 복사하지 않고 var()를 참조하므로,
+   위 @media (prefers-color-scheme: dark) 오버라이드가 유틸에도 그대로 적용된다.
+   (--shadow-sm/-md 는 Tailwind가 쓰는 이름과 같아 :root 정의가 곧 shadow-sm/md 유틸 값이 된다.)
+   ─────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-secondary: var(--secondary);
+  --color-secondary-fg: var(--secondary-fg);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-fg: var(--muted-fg);
+  --color-border: var(--border);
+  --color-input-border: var(--input-border);
+  --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-app-page: var(--app-page);
+  --radius-card: var(--radius);
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Inter", system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
@@ -84,12 +113,10 @@ body {
 .num { font-family: "Inter", "Pretendard Variable", sans-serif; font-feature-settings: "tnum"; }
 
 /* ───────── layout helpers ───────── */
-.container { width: 100%; padding-left: 16px; padding-right: 16px; }
 .stack { display: flex; flex-direction: column; }
 .row { display: flex; align-items: center; }
 .between { justify-content: space-between; }
 .center { align-items: center; justify-content: center; }
-.grow { flex: 1; min-width: 0; }
 .full-center {
   min-height: 60dvh;
   display: flex; flex-direction: column;
@@ -133,10 +160,6 @@ body {
 .body { font-size: 15px; font-weight: 400; }
 .caption { font-size: 13px; color: var(--muted-fg); }
 .muted { color: var(--muted-fg); }
-.text-accent { color: var(--accent); }
-.text-primary { color: var(--primary); }
-.text-success { color: var(--success); }
-.text-destructive { color: var(--destructive); }
 .link {
   color: var(--primary); font-weight: 600; cursor: pointer;
   text-decoration: none; background: none; border: none; font: inherit; padding: 0;
@@ -288,14 +311,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: .5; cursor: poi
   .fade-in { animation: fadeIn .28s ease; }
 }
 @keyframes fadeIn { from { transform: translateY(7px); } to { transform: none; } }
-
-/* spacing utils */
-.mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; }
-.mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; } .mt-8 { margin-top: 32px; }
-.mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; } .mb-8 { margin-bottom: 32px; }
-.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; }
-.py-6 { padding-top: 24px; padding-bottom: 24px; }
-.py-8 { padding-top: 32px; padding-bottom: 32px; }
 
 /* ═══════════ 폴리시 패스 (간격·타이포·모션·다크모드·a11y) ═══════════ */
 

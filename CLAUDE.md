@@ -77,17 +77,19 @@
 
 ## 6. 새 컴퓨터에서 셋업
 1. `npm install`
-2. **`.env` 생성** (gitignore됨, 절대 커밋 X) — `cp .env.example .env` 후 값 채우기. 2개 필요:
+2. **`.env` 생성** (gitignore됨, 절대 커밋 X) — `cp .env.example .env` 후 값 채우기. 3개 필요:
    ```
-   DATABASE_URL="postgresql://...neon.tech/neondb?sslmode=require"   # ⚠️ 직접(non-pooled) 연결!
-   AUTH_SECRET="..."                                                  # openssl rand -base64 32
+   DATABASE_URL="postgresql://...-pooler....neon.tech/neondb?sslmode=require"  # 앱 런타임 = 풀링
+   DIRECT_URL="postgresql://....neon.tech/neondb?sslmode=require"              # 마이그레이션 = 직접
+   AUTH_SECRET="..."                                                           # openssl rand -base64 32
    ```
 3. `npx prisma generate` (필요시 `npx prisma migrate dev`)
 - 품질 게이트: `npm run lint`(ESLint flat config, eslint 9.x + eslint-config-next) · `npm test`(vitest) · `npx tsc --noEmit`. **PR마다 GitHub Actions(`.github/workflows/ci.yml`)가 tsc+lint+test 자동 실행**(DB 미연결, prisma 모킹).
 4. `npm run dev` → http://localhost:3000
 
 ## 7. ⚠️ 이미 겪은 함정 (반복 금지)
-- **Prisma 마이그레이션은 풀링(`-pooler`) 연결에서 깨진다.** `DATABASE_URL`은 **직접(non-pooled)** 주소 사용. `prepared statement already exists` 에러가 그 증상.
+- **런타임과 마이그레이션은 서로 다른 연결을 쓴다.** 마이그레이션은 풀링(`-pooler`)에서 깨지고(`prepared statement already exists`), 반대로 서버리스 런타임이 직접 연결을 쓰면 커넥션이 고갈된다. 그래서 `datasource`에 `url`(=`DATABASE_URL`, pooler)과 `directUrl`(=`DIRECT_URL`, 직접)을 **분리**해 뒀다. 예전엔 변수 하나로 겸해서 마이그레이션 때마다 주소를 갈아끼워야 했다.
+- **`DIRECT_URL`이 없으면 `prisma generate`부터 실패한다** (`PrismaConfigEnvError`). `prisma.config.ts`가 두 값의 존재를 강제하고, Vercel·CI 모두 `postinstall`에서 generate를 돌린다 → **모든 배포 환경(Production·Preview)과 CI에 둘 다 등록**해야 빌드가 산다. CI는 연결하지 않으므로 `ci.yml`에 더미 값으로 넣어 뒀다.
 - **Prisma CLI는 `.env`를 읽지 `.env.local`을 안 읽는다.** 시크릿은 `.env`에.
 - **환경변수(AUTH_SECRET 등) 추가/변경 시 dev 서버 재시작** 필요 (시작 때만 로딩).
 - **NextAuth는 `@beta`(v5)** 가 App Router용. `latest`(v4)는 Pages Router용이라 안 맞음.

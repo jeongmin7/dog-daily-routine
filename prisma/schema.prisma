@@ -31,6 +31,8 @@ model ApiToken {
   tokenHash String @unique
   createdAt DateTime @default(now())
   lastUsedAt DateTime?
+
+  @@index([userId])
 }
 
 model Dog {
@@ -49,6 +51,8 @@ model Dog {
   diseases DogDisease[]
   measurements MeasurementSession[]
   feedAnalyses FeedAnalysis[]
+
+  @@index([userId])
 }
 
 model Disease {
@@ -70,6 +74,8 @@ model DiseaseMetric {
   alertMin Int?
   alertMax Int?
   sortOrder Int @default(0)
+
+  @@index([diseaseKey])
 }
 
 model DogDisease {
@@ -90,6 +96,8 @@ model MeasurementSession {
   metricKey String
   value Float
   measuredAt DateTime @default(now())
+
+  @@index([dogId, metricKey, measuredAt])
 }
 
 model Medication {
@@ -102,6 +110,8 @@ model Medication {
   remainingCount Int?
   createdAt DateTime @default(now())
   doses MedicationDose[]
+
+  @@index([dogId, createdAt])
 }
 
 model MedicationDose {
@@ -122,6 +132,8 @@ model Photo {
   url String
   caption String?
   createdAt DateTime @default(now())
+
+  @@index([dogId, createdAt])
 }
 
 model DogRecord {
@@ -137,6 +149,8 @@ model DogRecord {
   memo String?
   createdAt DateTime @default(now())
 updatedAt DateTime @updatedAt
+
+  @@index([dogId, date])
 }
 
 model FeedAnalysis {
@@ -151,4 +165,6 @@ model FeedAnalysis {
   benefits  Json
   model     String
   createdAt DateTime @default(now())
+
+  @@index([dogId, createdAt])
 }

@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
       <Header />
-      <main className="container py-8" style={{ flex: 1 }}>
+      <main className="w-full px-4 py-8" style={{ flex: 1 }}>
         {children}
       </main>
     </div>

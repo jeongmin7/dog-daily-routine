@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/lib/auth", () => ({ auth: vi.fn() }));
+
 vi.mock("@/lib/api-auth", () => ({ getUserId: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -68,6 +70,8 @@ describe("PATCH /api/dogs/[id] — 보관/복원 (soft delete)", () => {
   });
 
   it("archived가 boolean이 아니면 400", async () => {
+    // 소유 확인이 body 검증보다 먼저다 — 내 강아지여야 400까지 도달한다.
+    vi.mocked(prisma.dog.findFirst).mockResolvedValue({ id: "d1" } as never);
     const res = await PATCH(jsonReq({ archived: "yes" }, "PATCH"), ctx({ id: "d1" }));
     expect(res.status).toBe(400);
     expect(prisma.dog.update).not.toHaveBeenCalled();

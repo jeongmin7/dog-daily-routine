@@ -1,43 +1,29 @@
-import { getUserId } from "@/lib/api-auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
-import { NextResponse } from "next/server";
+import { notFound, requireDog, serverError } from "@/lib/api-guard";
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string; analysisId: string }> },
 ) {
   const { id, analysisId } = await params;
-  const userId = await getUserId(_req);
-  if (!userId) {
-    return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
-  }
+  const ctx = await requireDog(req, id);
+  if (ctx.error) return ctx.error;
   try {
-    const dog = await prisma.dog.findFirst({ where: { id, userId } });
-    if (!dog) {
-      return NextResponse.json(
-        { error: "해당 강아지를 찾을 수 없습니다." },
-        { status: 404 },
-      );
-    }
     const analysis = await prisma.feedAnalysis.findFirst({
-      where: { id: analysisId, dogId: dog.id },
+      where: { id: analysisId, dogId: ctx.dog.id },
     });
-    if (!analysis) {
-      return NextResponse.json(
-        { error: "해당 분석을 찾을 수 없습니다." },
-        { status: 404 },
-      );
-    }
+    if (!analysis) return notFound("해당 분석을 찾을 수 없습니다.");
+    // blob 삭제 실패가 DB 정리를 막지 않게 한다(고아 blob은 감수).
     try {
       await del(analysis.imageUrl);
-    } catch {}
+    } catch {
+      /* ignore */
+    }
     await prisma.feedAnalysis.delete({ where: { id: analysis.id } });
     return NextResponse.json({ message: "삭제되었습니다." }, { status: 200 });
-  } catch {
-    return NextResponse.json(
-      { error: "분석을 삭제하는 중 오류가 발생했습니다." },
-      { status: 500 },
-    );
+  } catch (e) {
+    return serverError(e, "분석을 삭제하는 중 오류가 발생했습니다.");
   }
 }

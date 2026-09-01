@@ -1,28 +1,16 @@
-import { getUserId } from "@/lib/api-auth";
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { parseBody, requireDog, serverError } from "@/lib/api-guard";
+import { dogArchive } from "@/lib/schemas";
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const userId = await getUserId(req);
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  try {
-    const dog = await prisma.dog.findFirst({ where: { id, userId } });
-    if (!dog) {
-      return NextResponse.json({ error: "Dog not found" }, { status: 404 });
-    }
-    return NextResponse.json({ data: dog }, { status: 200 });
-  } catch {
-    return NextResponse.json(
-      { error: "강아지 정보를 불러오는 중 오류가 발생했습니다." },
-      { status: 500 },
-    );
-  }
+  const ctx = await requireDog(req, id);
+  if (ctx.error) return ctx.error;
+  return NextResponse.json({ data: ctx.dog }, { status: 200 });
 }
 
 // 보관(archived:true) / 복원(archived:false) 토글. soft delete.
@@ -31,40 +19,18 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const userId = await getUserId(req);
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireDog(req, id);
+  if (ctx.error) return ctx.error;
+  const body = await parseBody(req, dogArchive);
+  if (body.error) return body.error;
   try {
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
-        { status: 400 },
-      );
-    }
-    if (typeof body?.archived !== "boolean") {
-      return NextResponse.json(
-        { error: "archived(boolean)는 필수입니다." },
-        { status: 400 },
-      );
-    }
-    const dog = await prisma.dog.findFirst({ where: { id, userId } });
-    if (!dog) {
-      return NextResponse.json({ error: "Dog not found" }, { status: 404 });
-    }
     const updated = await prisma.dog.update({
-      where: { id },
-      data: { archivedAt: body.archived ? new Date() : null },
+      where: { id: ctx.dog.id },
+      data: { archivedAt: body.data.archived ? new Date() : null },
     });
     return NextResponse.json({ data: updated }, { status: 200 });
-  } catch {
-    return NextResponse.json(
-      { error: "강아지 정보를 수정하는 중 오류가 발생했습니다." },
-      { status: 500 },
-    );
+  } catch (e) {
+    return serverError(e, "강아지 정보를 수정하는 중 오류가 발생했습니다.");
   }
 }
 
@@ -73,24 +39,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const userId = await getUserId(req);
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireDog(req, id);
+  if (ctx.error) return ctx.error;
   try {
-    const dog = await prisma.dog.findFirst({ where: { id, userId } });
-    if (!dog) {
-      return NextResponse.json({ error: "Dog not found" }, { status: 404 });
-    }
-    await prisma.dog.delete({ where: { id } });
-    return NextResponse.json(
-      { message: "Dog deleted successfully" },
-      { status: 200 },
-    );
-  } catch {
-    return NextResponse.json(
-      { error: "강아지 정보를 삭제하는 중 오류가 발생했습니다." },
-      { status: 500 },
-    );
+    // 기록·사진·약 등은 스키마의 onDelete: Cascade로 연쇄 삭제된다.
+    await prisma.dog.delete({ where: { id: ctx.dog.id } });
+    return NextResponse.json({ message: "Dog deleted successfully" }, { status: 200 });
+  } catch (e) {
+    return serverError(e, "강아지 정보를 삭제하는 중 오류가 발생했습니다.");
   }
 }

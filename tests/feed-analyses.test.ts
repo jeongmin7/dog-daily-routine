@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+vi.mock("@/lib/auth", () => ({ auth: vi.fn() }));
+
 vi.mock("@/lib/api-auth", () => ({ getUserId: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     dog: { findFirst: vi.fn() },
+    dogDisease: { findMany: vi.fn() },
     feedAnalysis: {
       findMany: vi.fn(),
       create: vi.fn(),
@@ -41,6 +44,8 @@ function imageForm() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // 지병은 AI 프롬프트 컨텍스트용으로 따로 조회한다. 기본은 없음.
+  vi.mocked(prisma.dogDisease.findMany).mockResolvedValue([] as never);
 });
 
 describe("GET feed-analyses", () => {

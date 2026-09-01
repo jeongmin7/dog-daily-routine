@@ -76,7 +76,7 @@ function ArchivedDogCard({ dog }: { dog: Dog }) {
     <div className="card">
       <div className="row gap-3" style={{ marginBottom: 12 }}>
         <DogAvatar size={48} />
-        <div className="grow">
+        <div className="flex-1 min-w-0">
           <div className="title-md">{dog.name}</div>
           <div className="caption">{meta || "기본 정보 없음"}</div>
         </div>

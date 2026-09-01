@@ -64,7 +64,7 @@ export default function DashboardPage() {
             <div className="card dog-card" key={dog.id} onClick={() => router.push(`/dogs/${dog.id}`)}>
               <div className="row gap-3">
                 <DogAvatar size={52} />
-                <div className="grow">
+                <div className="flex-1 min-w-0">
                   <div className="title-md">{dog.name}</div>
                   <div className="caption">
                     {[dog.breed, ageString(dog.birthdate)].filter(Boolean).join(" · ") || "기본 정보 없음"}

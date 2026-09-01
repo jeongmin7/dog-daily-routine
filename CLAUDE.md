@@ -71,6 +71,7 @@
 - **데이터(서버 상태)**: `lib/prisma.ts`(싱글톤) → Neon. 클라는 `lib/queries.ts`의 react-query 훅으로만 접근(직접 axios/`useEffect` fetch 금지). 새 엔드포인트 추가 시 fetcher + 쿼리/뮤테이션 훅을 여기 추가하고, 쓰기 후엔 관련 `qk` 키를 invalidate.
 - **클라 UI 상태**: zustand `lib/store.ts`(`useUserStore`). 서버 상태를 여기 복제하지 말 것 — 서버에서 오는 건 전부 react-query.
 - **인증**: NextAuth v5 Credentials, **JWT 세션**(DB 어댑터 없음). 가드는 미들웨어 대신 **서버 레이아웃에서 `auth()`** (Prisma가 edge 비호환이라).
+- **스타일**: 유틸리티(간격·색·레이아웃)는 **Tailwind만**, 재사용 컴포넌트 클래스(`.btn`·`.card`·`.input`·`.chart-*`)는 `app/globals.css`. **Tailwind 유틸을 CSS로 재구현하지 말 것** (`.mb-4` 같은 걸 직접 정의하면 Tailwind 것과 이름이 겹쳐 소스 순서에 의존하는 충돌이 된다 — 2026-09-01에 걷어냄). 디자인 토큰은 `:root`에 정의하고 `@theme inline`으로 Tailwind에 노출 → `text-primary`·`bg-card` 등으로 쓰면 다크모드 오버라이드까지 따라온다.
 - **API 규칙**: AGENTS.md 참고 (json만 · 정확한 status code · 에러 `{error}` · 검증 프론트1차+백2차 · 인증 API는 Bearer→API 분리 단계에서).
 - **모델 요약**: `User`(id, email@unique, password=해시, name?, createdAt) / `Dog`(+userId FK, name, breed?, birthdate?, weight?) / `DogRecord`(+dogId FK, date, meal?, walkMin?, walkKm?, poop?, weight?, memo?).
 

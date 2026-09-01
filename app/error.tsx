@@ -15,7 +15,7 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <div className="container full-center" style={{ minHeight: 360 }}>
+    <div className="w-full px-4 full-center" style={{ minHeight: 360 }}>
       <div style={{ fontSize: 40, marginBottom: 8 }}>⚠️</div>
       <div className="h2 mb-2">문제가 발생했어요</div>
       <div className="caption mb-6" style={{ textAlign: "center", maxWidth: 280 }}>

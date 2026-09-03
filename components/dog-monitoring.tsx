@@ -3,11 +3,8 @@
 /* 건강 모니터링 (MVP 2 슬라이스) — 지병 등록/해제 + 지표별 측정(탭 카운터)·추이·임계값 경고.
 
    스타일 규칙(CLAUDE.md): 색·간격은 디자인 토큰/유틸리티로. 하드코딩 값은 다크모드
-   오버라이드를 따라가지 못한다.
-   주의: globals.css의 컴포넌트 클래스(.row/.body/.caption)는 @layer 밖이라 Tailwind
-   유틸리티를 항상 이긴다. 그래서 정렬(.row → align-items:center)·글꼴 두께(.body →
-   400)·색(.caption → muted-fg)을 바꿔야 하는 자리에서는 그 클래스를 쓰지 않고
-   유틸리티만으로 조립한다. */
+   오버라이드를 따라가지 못한다. 컴포넌트 클래스(.row/.body/.caption) 위에 유틸리티를
+   얹어 덮어쓸 수 있다 — globals.css가 @layer components 안에 있기 때문이다. */
 
 import { useState } from "react";
 import {
@@ -154,17 +151,14 @@ function MetricRow({ dogId, metric }: { dogId: string; metric: DiseaseMetric }) 
 
   return (
     <div>
-      {/* .row는 align-items:center를 강제하므로 여기선 안 쓴다 */}
-      <div className="flex items-end justify-between">
+      <div className="row between items-end">
         <div>
-          {/* .body는 font-weight:400을 강제 → 유틸리티로 직접 조립 */}
-          <div className="text-[15px] font-semibold">
+          <div className="body font-semibold">
             {metric.label}{" "}
             <span className="caption font-normal">({metric.unit})</span>
           </div>
           {latest != null ? (
-            // .caption은 색을 강제 → 경고색을 얹을 수 없어 유틸리티로 조립
-            <div className={`mt-0.5 text-[13px] ${alerting ? "text-destructive" : "text-muted-fg"}`}>
+            <div className={`caption mt-0.5 ${alerting ? "text-destructive" : ""}`}>
               최근 <span className="num font-bold">{latest}</span> {metric.unit}
               {alerting ? " · ⚠️ 정상 범위를 벗어났어요" : ""}
             </div>

@@ -2,9 +2,9 @@
 
 /* 약 관리 — 약 목록(복용 시간 칩 토글·잔량·놓침) + 약 추가/삭제. 강아지 상세에 삽입.
 
-   스타일 규칙(CLAUDE.md): 색·간격은 디자인 토큰/유틸리티로.
-   주의: globals.css의 .caption은 @layer 밖이라 color를 강제한다. 잔량 경고처럼
-   색이 조건부로 바뀌는 자리에선 .caption을 쓰지 않고 유틸리티로 조립한다. */
+   스타일 규칙(CLAUDE.md): 색·간격은 디자인 토큰/유틸리티로. .caption 위에
+   text-destructive 를 얹어 조건부로 덮어쓸 수 있다 — globals.css가
+   @layer components 안에 있기 때문이다. */
 
 import { useState } from "react";
 import {
@@ -115,7 +115,7 @@ function MedicationCard({ dogId, med }: { dogId: string; med: Medication }) {
       </div>
 
       {med.remainingCount != null && (
-        <div className={`mt-2.5 text-[13px] ${lowStock ? "text-destructive" : "text-muted-fg"}`}>
+        <div className={`caption mt-2.5 ${lowStock ? "text-destructive" : ""}`}>
           잔량 {med.remainingCount}회분{lowStock ? " · 곧 떨어져요, 처방 받으세요" : ""}
         </div>
       )}

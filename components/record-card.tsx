@@ -14,7 +14,7 @@ export function RecordMetrics({ record }: { record: DogRecord }) {
           <span className="metric-emoji" key={k}>
             <span className="em">{m.emoji}</span>
             <span className="val num">{record[k]}</span>
-            <span className="muted text-[13px]">
+            <span className="caption">
               {m.unit}
             </span>
           </span>

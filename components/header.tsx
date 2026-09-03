@@ -17,17 +17,17 @@ export function Header() {
 
   return (
     <header className="app-header">
-      <div onClick={() => router.push("/")} style={{ cursor: "pointer" }}>
+      <div onClick={() => router.push("/")} className="cursor-pointer">
         <BrandLogo size="sm" />
       </div>
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+      <div className="inline-flex items-center gap-0.5">
         <Btn variant="ghost" size="sm" onClick={() => router.push("/settings")} aria-label="설정">
           <SettingsIcon />
         </Btn>
         <Btn variant="ghost" size="sm" onClick={handleLogout}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span className="inline-flex items-center gap-1.5">
             <LogoutIcon />
-            <span className="caption" style={{ color: "inherit" }}>
+            <span className="caption text-inherit">
               로그아웃
             </span>
           </span>

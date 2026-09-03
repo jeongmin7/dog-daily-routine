@@ -32,7 +32,7 @@ type ToolProps = {
 
 function Actions({ onCancel, onSave, saving, disabled }: { onCancel: () => void; onSave: () => void; saving: boolean; disabled?: boolean }) {
   return (
-    <div className="row gap-2" style={{ marginTop: 12 }}>
+    <div className="row gap-2 mt-3">
       <Btn variant="outline" block disabled={saving} onClick={onCancel}>취소</Btn>
       <Btn block loading={saving} loadingText="저장 중…" disabled={disabled} onClick={onSave}>저장</Btn>
     </div>
@@ -49,7 +49,7 @@ function DiffInput({ metric, onSave, onCancel, saving }: ToolProps) {
   const diff = valid ? s - e : null;
 
   return (
-    <div className="card" style={{ marginTop: 8 }}>
+    <div className="card mt-2">
       <div className="caption mb-4">시작값에서 종료값을 빼서 {metric.label}을(를) 계산해요.</div>
       <Field label={`시작값 (${metric.unit})`} htmlFor="m-start">
         <TextInput id="m-start" className="num" type="number" inputMode="decimal" value={start} onChange={(e) => setStart(e.target.value)} placeholder="예: 500" />
@@ -59,7 +59,7 @@ function DiffInput({ metric, onSave, onCancel, saving }: ToolProps) {
       </Field>
       {diff != null && (
         <div className="caption">
-          = <span className="num" style={{ fontWeight: 700 }}>{diff}</span> {metric.unit}
+          = <span className="num font-bold">{diff}</span> {metric.unit}
         </div>
       )}
       <Actions onCancel={onCancel} saving={saving} disabled={!valid} onSave={() => valid && onSave(diff!)} />
@@ -71,10 +71,10 @@ function DiffInput({ metric, onSave, onCancel, saving }: ToolProps) {
 function SliderInput({ metric, onSave, onCancel, saving }: ToolProps) {
   const [score, setScore] = useState(3);
   return (
-    <div className="card" style={{ marginTop: 8 }}>
+    <div className="card mt-2">
       <div className="row between mb-4">
         <span className="caption">{metric.label} 점수</span>
-        <span className="num" style={{ fontWeight: 700, fontSize: 20 }}>{score}</span>
+        <span className="num text-xl font-bold">{score}</span>
       </div>
       <input
         type="range"
@@ -83,9 +83,9 @@ function SliderInput({ metric, onSave, onCancel, saving }: ToolProps) {
         step={1}
         value={score}
         onChange={(e) => setScore(Number(e.target.value))}
-        style={{ width: "100%" }}
+        className="w-full"
       />
-      <div className="row between caption" style={{ marginTop: 4 }}>
+      <div className="row between caption mt-1">
         <span>1 (낮음)</span>
         <span>5 (높음)</span>
       </div>
@@ -100,7 +100,7 @@ function NumberInput({ metric, onSave, onCancel, saving }: ToolProps) {
   const n = Number(val);
   const valid = val !== "" && !Number.isNaN(n);
   return (
-    <div className="card" style={{ marginTop: 8 }}>
+    <div className="card mt-2">
       <Field label={`${metric.label} (${metric.unit})`} htmlFor="m-num">
         <TextInput id="m-num" className="num" type="number" inputMode="decimal" value={val} onChange={(e) => setVal(e.target.value)} placeholder={`예: ${metric.alertMin ?? 100}`} />
       </Field>

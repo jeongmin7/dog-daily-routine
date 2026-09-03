@@ -90,10 +90,10 @@ export function RecordForm({
   const sub = isEdit ? `${dog.name}의 기록을 수정하세요` : "기록할 항목만 입력하세요 (모두 선택)";
 
   return (
-    <div className="fade-in" style={{ maxWidth: 440, margin: "0 auto" }}>
+    <div className="fade-in mx-auto max-w-[440px]">
       <BackBar onBack={onCancel} label="취소" />
       <div className="h2">{title}</div>
-      <div className="caption mb-6" style={{ marginTop: 6 }}>
+      <div className="caption mb-6 mt-1.5">
         {sub}
       </div>
 
@@ -127,7 +127,7 @@ export function RecordForm({
         저장
       </Btn>
       {isEdit && (
-        <div className="row" style={{ justifyContent: "flex-end", marginTop: 14 }}>
+        <div className="row justify-end mt-[14px]">
           <Btn variant="destructive" size="sm" onClick={doDelete} disabled={busy}>
             삭제
           </Btn>

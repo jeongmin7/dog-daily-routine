@@ -14,7 +14,7 @@ export function RecordMetrics({ record }: { record: DogRecord }) {
           <span className="metric-emoji" key={k}>
             <span className="em">{m.emoji}</span>
             <span className="val num">{record[k]}</span>
-            <span className="muted" style={{ fontSize: 13 }}>
+            <span className="muted text-[13px]">
               {m.unit}
             </span>
           </span>
@@ -28,16 +28,16 @@ export function RecordCard({ record, onClick }: { record: DogRecord; onClick?: (
   const rel = relativeDay(record.date);
   return (
     <div className="record-card fade-in" onClick={onClick}>
-      <div className="row between" style={{ marginBottom: 9 }}>
-        <span className="caption" style={{ fontWeight: 500 }}>
+      <div className="row between mb-[9px]">
+        <span className="caption font-medium">
           {fmtDateKo(record.date)}
           {rel && (
-            <span className="text-primary" style={{ marginLeft: 7, fontWeight: 600 }}>
+            <span className="text-primary ml-[7px] font-semibold">
               {rel}
             </span>
           )}
         </span>
-        <svg width="7" height="12" viewBox="0 0 8 14" style={{ flexShrink: 0 }}>
+        <svg width="7" height="12" viewBox="0 0 8 14" className="shrink-0">
           <path d="M1 1l6 6-6 6" stroke="var(--muted-fg)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>

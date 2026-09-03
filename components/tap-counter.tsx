@@ -1,7 +1,12 @@
 "use client";
 
 /* 탭 카운터 측정 도구 — 첫 탭에 타이머 시작, durationSec 후 자동 종료, count×multiplier = 값.
-   호흡수(60초 ×1)·심박수(15초 ×4) 측정용. 풀스크린 오버레이. */
+   호흡수(60초 ×1)·심박수(15초 ×4) 측정용. 풀스크린 오버레이.
+
+   스타일 규칙(CLAUDE.md): 색·간격은 디자인 토큰/유틸리티로.
+   주의: globals.css의 컴포넌트 클래스(.row/.caption/.full-center)는 @layer 밖이라
+   Tailwind 유틸리티를 항상 이긴다. 색·정렬을 바꿔야 하는 자리에선 그 클래스를
+   쓰지 않는다. */
 
 import { useEffect, useRef, useState } from "react";
 import type { DiseaseMetric } from "@/lib/types";
@@ -63,24 +68,10 @@ export function TapCounter({
   const value = count * multiplier;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 50,
-        background: "var(--bg, #fff)",
-        display: "flex",
-        flexDirection: "column",
-        padding: 24,
-      }}
-    >
-      <div className="row between" style={{ marginBottom: 8 }}>
+    <div className="fixed inset-0 z-50 flex flex-col bg-background p-6">
+      <div className="row between mb-2">
         <div className="title-md">{metric.label}</div>
-        <button
-          onClick={onClose}
-          className="caption"
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted-fg)" }}
-        >
+        <button onClick={onClose} className="caption cursor-pointer border-0 bg-transparent">
           닫기
         </button>
       </div>
@@ -94,31 +85,18 @@ export function TapCounter({
         <button
           onClick={tap}
           aria-label="탭"
-          style={{
-            flex: 1,
-            border: "none",
-            borderRadius: 20,
-            background: phase === "running" ? "var(--primary)" : "var(--primary-weak, #e6f2fb)",
-            color: phase === "running" ? "#fff" : "var(--primary)",
-            cursor: "pointer",
-            fontWeight: 800,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            WebkitTapHighlightColor: "transparent",
-            userSelect: "none",
-          }}
+          className={`flex flex-1 cursor-pointer select-none flex-col items-center justify-center gap-2 rounded-[20px] border-0 font-extrabold ${
+            phase === "running" ? "bg-primary text-primary-fg" : "bg-primary/10 text-primary"
+          }`}
         >
-          <span style={{ fontSize: 72, lineHeight: 1 }} className="num">{count}</span>
-          <span style={{ fontSize: 16 }}>{phase === "idle" ? "탭하여 시작" : "탭"}</span>
+          <span className="num text-[72px] leading-none">{count}</span>
+          <span className="text-base">{phase === "idle" ? "탭하여 시작" : "탭"}</span>
         </button>
       ) : (
-        <div className="full-center" style={{ flex: 1 }}>
-          <div className="num" style={{ fontSize: 64, fontWeight: 800 }}>{value}</div>
-          <div className="caption" style={{ marginBottom: 20 }}>{metric.unit}</div>
-          <div className="row gap-2" style={{ width: "100%", maxWidth: 320 }}>
+        <div className="full-center flex-1">
+          <div className="num text-[64px] font-extrabold">{value}</div>
+          <div className="caption mb-5">{metric.unit}</div>
+          <div className="row gap-2 w-full max-w-[320px]">
             <Btn variant="outline" block disabled={saving} onClick={reset}>
               다시
             </Btn>

@@ -1,6 +1,10 @@
 "use client";
 
-/* 약 관리 — 약 목록(복용 시간 칩 토글·잔량·놓침) + 약 추가/삭제. 강아지 상세에 삽입. */
+/* 약 관리 — 약 목록(복용 시간 칩 토글·잔량·놓침) + 약 추가/삭제. 강아지 상세에 삽입.
+
+   스타일 규칙(CLAUDE.md): 색·간격은 디자인 토큰/유틸리티로.
+   주의: globals.css의 .caption은 @layer 밖이라 color를 강제한다. 잔량 경고처럼
+   색이 조건부로 바뀌는 자리에선 .caption을 쓰지 않고 유틸리티로 조립한다. */
 
 import { useState } from "react";
 import {
@@ -42,7 +46,7 @@ export function DogMedications({ dogId }: { dogId: string }) {
       ) : meds.length === 0 ? (
         !adding && (
           <div className="card">
-            <div className="caption" style={{ textAlign: "center", padding: "10px 0" }}>
+            <div className="caption py-2.5 text-center">
               등록한 약이 없어요. 복용 중인 약을 추가해보세요 💊
             </div>
           </div>
@@ -67,11 +71,11 @@ function MedicationCard({ dogId, med }: { dogId: string; med: Medication }) {
 
   return (
     <div className="card">
-      <div className="row between" style={{ marginBottom: 10 }}>
+      <div className="row between mb-2.5">
         <div>
           <span className="title-md">{med.name}</span>
           {med.dosage && (
-            <span className="caption" style={{ marginLeft: 8 }}>
+            <span className="caption ml-2">
               {med.dosage}
             </span>
           )}
@@ -80,14 +84,13 @@ function MedicationCard({ dogId, med }: { dogId: string; med: Medication }) {
           aria-label="약 삭제"
           onClick={() => remove.mutate(med.id)}
           disabled={remove.isPending}
-          className="caption"
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted-fg)" }}
+          className="caption cursor-pointer border-0 bg-transparent"
         >
           삭제
         </button>
       </div>
 
-      <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+      <div className="row gap-2 flex-wrap">
         {med.times.map((t) => {
           const taken = takenTimes.has(t);
           const missed = !taken && t < now;
@@ -96,17 +99,13 @@ function MedicationCard({ dogId, med }: { dogId: string; med: Medication }) {
               key={t}
               onClick={() => toggle.mutate({ medId: med.id, time: t, taken: !taken })}
               disabled={toggle.isPending}
-              className="num"
-              style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                border: taken ? "none" : `1px solid ${missed ? "var(--destructive)" : "var(--border)"}`,
-                background: taken ? "var(--primary)" : "transparent",
-                color: taken ? "#fff" : missed ? "var(--destructive)" : "var(--fg)",
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: 14,
-              }}
+              className={`num cursor-pointer rounded-full px-3 py-1.5 text-sm font-semibold ${
+                taken
+                  ? "border-0 bg-primary text-primary-fg"
+                  : missed
+                    ? "border border-destructive bg-transparent text-destructive"
+                    : "border border-border bg-transparent text-foreground"
+              }`}
             >
               {taken ? "✓ " : missed ? "! " : ""}
               {t}
@@ -116,7 +115,7 @@ function MedicationCard({ dogId, med }: { dogId: string; med: Medication }) {
       </div>
 
       {med.remainingCount != null && (
-        <div className="caption" style={{ marginTop: 10, color: lowStock ? "var(--destructive)" : undefined }}>
+        <div className={`mt-2.5 text-[13px] ${lowStock ? "text-destructive" : "text-muted-fg"}`}>
           잔량 {med.remainingCount}회분{lowStock ? " · 곧 떨어져요, 처방 받으세요" : ""}
         </div>
       )}

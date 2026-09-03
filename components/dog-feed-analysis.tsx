@@ -3,10 +3,9 @@
 /* 사료 분석 — 성분표 사진 업로드 + AI 분석 결과 히스토리. 강아지 상세에 삽입.
 
    스타일 규칙(CLAUDE.md): 색은 반드시 디자인 토큰(text-primary / bg-destructive/10 …)으로.
-   하드코딩한 hex는 다크모드 오버라이드를 따라가지 못한다.
-   주의: globals.css의 컴포넌트 클래스(.caption/.body/.row)는 @layer 밖이라 Tailwind
-   유틸리티를 항상 이긴다. 그래서 색이나 정렬을 바꿔야 하는 곳은 그 클래스를 쓰지 않고
-   유틸리티만으로 조립한다. */
+   하드코딩한 hex는 다크모드 오버라이드를 따라가지 못한다. 컴포넌트 클래스
+   (.caption/.body/.row) 위에 유틸리티를 얹어 덮어쓸 수 있다 — globals.css가
+   @layer components 안에 있기 때문이다. */
 
 import { useRef, useState } from "react";
 import {
@@ -86,14 +85,14 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
           {file && !create.isPending && (
             <button
               onClick={() => setFile(null)}
-              className="cursor-pointer border-0 bg-transparent text-[13px] text-accent"
+              className="caption cursor-pointer border-0 bg-transparent text-accent"
             >
               취소
             </button>
           )}
         </div>
         {create.isPending && (
-          <div className="mt-2 text-[13px] text-primary">
+          <div className="caption mt-2 text-primary">
             AI가 성분표를 읽고 있어요. 몇 초 걸릴 수 있어요…
           </div>
         )}
@@ -112,8 +111,8 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
         <div className="stack gap-4">
           {analyses.map((a) => (
             <div key={a.id} className="card">
-              {/* 썸네일 + 요약 헤더 — .row는 align-items:center를 강제하므로 여기선 안 쓴다 */}
-              <div className="mb-2 flex items-start gap-3">
+              {/* 썸네일 + 요약 헤더 */}
+              <div className="row gap-3 mb-2 items-start">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={a.imageUrl}
@@ -126,6 +125,7 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
                       {a.rating}/5
                     </span>
                   </div>
+                  {/* 13px + 본문색 조합에 맞는 컴포넌트 클래스가 없다(.caption은 muted색) → 임의값 유지 */}
                   <div className="text-[13px]">{a.summary}</div>
                 </div>
 
@@ -160,7 +160,7 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
               {/* 주의 성분 */}
               {a.cautions.length > 0 && (
                 <div className="mb-2">
-                  <div className="mb-1 text-[13px] font-semibold text-destructive">⚠ 주의 성분</div>
+                  <div className="caption mb-1 font-semibold text-destructive">⚠ 주의 성분</div>
                   <div className="stack gap-1">
                     {a.cautions.map((c, i) => (
                       <div
@@ -177,7 +177,7 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
               {/* 이점 */}
               {a.benefits.length > 0 && (
                 <div className="mb-2">
-                  <div className="mb-1 text-[13px] font-semibold text-success">✓ 좋은 점</div>
+                  <div className="caption mb-1 font-semibold text-success">✓ 좋은 점</div>
                   <div className="flex flex-wrap gap-1.5">
                     {a.benefits.map((b, i) => (
                       <span

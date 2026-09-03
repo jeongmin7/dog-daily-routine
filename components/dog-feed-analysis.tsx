@@ -1,6 +1,11 @@
 "use client";
 
-/* 사료 분석 — 성분표 사진 업로드 + AI 분석 결과 히스토리. 강아지 상세에 삽입. */
+/* 사료 분석 — 성분표 사진 업로드 + AI 분석 결과 히스토리. 강아지 상세에 삽입.
+
+   스타일 규칙(CLAUDE.md): 색은 반드시 디자인 토큰(text-primary / bg-destructive/10 …)으로.
+   하드코딩한 hex는 다크모드 오버라이드를 따라가지 못한다. 컴포넌트 클래스
+   (.caption/.body/.row) 위에 유틸리티를 얹어 덮어쓸 수 있다 — globals.css가
+   @layer components 안에 있기 때문이다. */
 
 import { useRef, useState } from "react";
 import {
@@ -9,6 +14,11 @@ import {
   useDeleteFeedAnalysis,
 } from "@/lib/queries";
 import { Btn } from "./ui";
+
+const MAX_BYTES = 4 * 1024 * 1024;
+
+// 아이콘 버튼(삭제/확인/취소) 공통 — 배경·테두리 없는 12px 텍스트 버튼.
+const iconBtn = "shrink-0 cursor-pointer border-0 bg-transparent text-xs disabled:opacity-50";
 
 export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
   const { data: analyses = [], isPending: loading } = useFeedAnalyses(dogId);
@@ -23,11 +33,12 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
     const f = e.target.files?.[0] ?? null;
     e.target.value = "";
     if (!f) return;
+    // accept="image/*"가 1차로 거르지만 드래그앤드롭·OS의 "모든 파일"을 통과할 수 있다.
     if (!f.type.startsWith("image/")) {
       alert("이미지 파일만 올릴 수 있어요.");
       return;
     }
-    if (f.size > 4 * 1024 * 1024) {
+    if (f.size > MAX_BYTES) {
       alert("이미지는 4MB 이하만 가능해요.");
       return;
     }
@@ -52,14 +63,8 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
 
       {/* 파일 선택 + 분석 버튼 */}
       <div className="card mb-4">
-        <div className="row gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={pick}
-          />
+        <div className="row gap-2 flex-wrap">
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={pick} />
           <Btn
             size="sm"
             variant="outline"
@@ -80,15 +85,14 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
           {file && !create.isPending && (
             <button
               onClick={() => setFile(null)}
-              className="caption"
-              style={{ color: "#FF7A6E", background: "none", border: "none", cursor: "pointer" }}
+              className="caption cursor-pointer border-0 bg-transparent text-accent"
             >
               취소
             </button>
           )}
         </div>
         {create.isPending && (
-          <div className="caption" style={{ marginTop: 8, color: "#2E92D6" }}>
+          <div className="caption mt-2 text-primary">
             AI가 성분표를 읽고 있어요. 몇 초 걸릴 수 있어요…
           </div>
         )}
@@ -99,79 +103,46 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
         <div className="caption">불러오는 중…</div>
       ) : analyses.length === 0 ? (
         <div className="card">
-          <div className="caption" style={{ textAlign: "center", padding: "10px 0" }}>
+          <div className="caption py-2.5 text-center">
             아직 분석한 사료가 없어요. 성분표 사진을 올려보세요.
           </div>
         </div>
       ) : (
         <div className="stack gap-4">
           {analyses.map((a) => (
-            <div key={a.id} className="card" style={{ padding: 16 }}>
+            <div key={a.id} className="card">
               {/* 썸네일 + 요약 헤더 */}
-              <div className="row gap-3" style={{ alignItems: "flex-start", marginBottom: 8 }}>
+              <div className="row gap-3 mb-2 items-start">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={a.imageUrl}
                   alt="성분표"
-                  style={{
-                    width: 72,
-                    height: 72,
-                    objectFit: "cover",
-                    borderRadius: 10,
-                    flexShrink: 0,
-                  }}
+                  className="h-18 w-18 shrink-0 rounded-[10px] object-cover"
                 />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="row gap-2" style={{ marginBottom: 4 }}>
-                    <span
-                      style={{
-                        background: "#2E92D6",
-                        color: "#fff",
-                        borderRadius: 999,
-                        padding: "2px 8px",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        flexShrink: 0,
-                      }}
-                    >
+                <div className="min-w-0 flex-1">
+                  <div className="row gap-2 mb-1">
+                    <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-fg">
                       {a.rating}/5
                     </span>
                   </div>
-                  <div className="body" style={{ fontSize: 13 }}>
-                    {a.summary}
-                  </div>
+                  {/* 13px + 본문색 조합에 맞는 컴포넌트 클래스가 없다(.caption은 muted색) → 임의값 유지 */}
+                  <div className="text-[13px]">{a.summary}</div>
                 </div>
 
-                {/* 삭제 버튼 */}
+                {/* 삭제 — 2단계 확인 */}
                 {confirmId === a.id ? (
-                  <div className="row gap-1" style={{ flexShrink: 0 }}>
+                  <div className="row gap-1 shrink-0">
                     <button
                       onClick={() => {
                         remove.mutate(a.id);
                         setConfirmId(null);
                       }}
                       disabled={remove.isPending}
-                      style={{
-                        fontSize: 12,
-                        color: "#FF7A6E",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                      }}
+                      className={`${iconBtn} font-semibold text-accent`}
                     >
                       확인
                     </button>
-                    <button
-                      onClick={() => setConfirmId(null)}
-                      style={{
-                        fontSize: 12,
-                        color: "#888",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                    >
+                    <button onClick={() => setConfirmId(null)} className={`${iconBtn} text-muted-fg`}>
                       취소
                     </button>
                   </div>
@@ -179,14 +150,7 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
                   <button
                     onClick={() => setConfirmId(a.id)}
                     disabled={remove.isPending}
-                    style={{
-                      fontSize: 12,
-                      color: "#aaa",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      flexShrink: 0,
-                    }}
+                    className={`${iconBtn} text-muted-fg`}
                   >
                     삭제
                   </button>
@@ -195,22 +159,13 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
 
               {/* 주의 성분 */}
               {a.cautions.length > 0 && (
-                <div style={{ marginBottom: 8 }}>
-                  <div className="caption" style={{ marginBottom: 4, fontWeight: 600, color: "#b91c1c" }}>
-                    ⚠ 주의 성분
-                  </div>
+                <div className="mb-2">
+                  <div className="caption mb-1 font-semibold text-destructive">⚠ 주의 성분</div>
                   <div className="stack gap-1">
                     {a.cautions.map((c, i) => (
                       <div
                         key={i}
-                        style={{
-                          background: "#fef2f2",
-                          border: "1px solid #fecaca",
-                          borderRadius: 8,
-                          padding: "4px 10px",
-                          fontSize: 12,
-                          color: "#b91c1c",
-                        }}
+                        className="rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs text-destructive"
                       >
                         <strong>{c.ingredient}</strong> — {c.reason}
                       </div>
@@ -221,22 +176,13 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
 
               {/* 이점 */}
               {a.benefits.length > 0 && (
-                <div style={{ marginBottom: 8 }}>
-                  <div className="caption" style={{ marginBottom: 4, fontWeight: 600, color: "#15803d" }}>
-                    ✓ 좋은 점
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <div className="mb-2">
+                  <div className="caption mb-1 font-semibold text-success">✓ 좋은 점</div>
+                  <div className="flex flex-wrap gap-1.5">
                     {a.benefits.map((b, i) => (
                       <span
                         key={i}
-                        style={{
-                          background: "#f0fdf4",
-                          border: "1px solid #bbf7d0",
-                          borderRadius: 999,
-                          padding: "2px 10px",
-                          fontSize: 12,
-                          color: "#15803d",
-                        }}
+                        className="rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 text-xs text-success"
                       >
                         {b}
                       </span>
@@ -248,17 +194,13 @@ export default function DogFeedAnalysis({ dogId }: { dogId: string }) {
               {/* 영양 성분 표 */}
               {a.nutrients.length > 0 && (
                 <div>
-                  <div className="caption" style={{ marginBottom: 4, fontWeight: 600 }}>
-                    영양 성분
-                  </div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <div className="caption mb-1 font-semibold">영양 성분</div>
+                  <table className="w-full border-collapse text-xs">
                     <tbody>
                       {a.nutrients.map((n, i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                          <td style={{ padding: "3px 0", fontWeight: 600, color: "#555", width: "50%" }}>
-                            {n.label}
-                          </td>
-                          <td style={{ padding: "3px 0", color: "#333" }}>{n.value}</td>
+                        <tr key={i} className="border-b border-border">
+                          <td className="w-1/2 py-[3px] font-semibold text-muted-fg">{n.label}</td>
+                          <td className="py-[3px]">{n.value}</td>
                         </tr>
                       ))}
                     </tbody>

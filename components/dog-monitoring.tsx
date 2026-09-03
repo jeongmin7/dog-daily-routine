@@ -1,6 +1,10 @@
 "use client";
 
-/* 건강 모니터링 (MVP 2 슬라이스) — 지병 등록/해제 + 지표별 측정(탭 카운터)·추이·임계값 경고. */
+/* 건강 모니터링 (MVP 2 슬라이스) — 지병 등록/해제 + 지표별 측정(탭 카운터)·추이·임계값 경고.
+
+   스타일 규칙(CLAUDE.md): 색·간격은 디자인 토큰/유틸리티로. 하드코딩 값은 다크모드
+   오버라이드를 따라가지 못한다. 컴포넌트 클래스(.row/.body/.caption) 위에 유틸리티를
+   얹어 덮어쓸 수 있다 — globals.css가 @layer components 안에 있기 때문이다. */
 
 import { useState } from "react";
 import {
@@ -38,7 +42,7 @@ function Sparkline({ values }: { values: number[] }) {
     })
     .join(" ");
   return (
-    <svg width={w} height={h} style={{ display: "block" }}>
+    <svg width={w} height={h} className="block">
       <polyline points={pts} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -68,7 +72,7 @@ export function DogMonitoring({ dogId }: { dogId: string }) {
       {picking && (
         <div className="card mb-4">
           <div className="caption mb-4">등록할 지병을 선택하세요</div>
-          <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+          <div className="row gap-2 flex-wrap">
             {available.map((d) => (
               <Btn
                 key={d.key}
@@ -84,7 +88,7 @@ export function DogMonitoring({ dogId }: { dogId: string }) {
               </Btn>
             ))}
           </div>
-          <Btn size="sm" variant="ghost" style={{ marginTop: 12 }} onClick={() => setPicking(false)}>
+          <Btn size="sm" variant="ghost" className="mt-3" onClick={() => setPicking(false)}>
             취소
           </Btn>
         </div>
@@ -95,7 +99,7 @@ export function DogMonitoring({ dogId }: { dogId: string }) {
       ) : registered.length === 0 ? (
         !picking && (
           <div className="card">
-            <div className="caption" style={{ textAlign: "center", padding: "10px 0" }}>
+            <div className="caption py-2.5 text-center">
               등록된 지병이 없어요. 지병을 등록하면 맞춤 모니터링 지표가 생겨요 🩺
             </div>
           </div>
@@ -104,13 +108,12 @@ export function DogMonitoring({ dogId }: { dogId: string }) {
         <div className="stack gap-3">
           {registered.map((r) => (
             <div className="card" key={r.id}>
-              <div className="row between" style={{ marginBottom: 12 }}>
+              <div className="row between mb-3">
                 <span className="title-md">{r.disease.name}</span>
                 <button
                   onClick={() => unregister.mutate(r.diseaseKey)}
                   disabled={unregister.isPending}
-                  className="caption"
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted-fg)" }}
+                  className="caption cursor-pointer border-0 bg-transparent"
                 >
                   해제
                 </button>
@@ -148,21 +151,19 @@ function MetricRow({ dogId, metric }: { dogId: string; metric: DiseaseMetric }) 
 
   return (
     <div>
-      <div className="row between" style={{ alignItems: "flex-end" }}>
+      <div className="row between items-end">
         <div>
-          <div className="body" style={{ fontWeight: 600 }}>
+          <div className="body font-semibold">
             {metric.label}{" "}
-            <span className="caption" style={{ fontWeight: 400 }}>
-              ({metric.unit})
-            </span>
+            <span className="caption font-normal">({metric.unit})</span>
           </div>
           {latest != null ? (
-            <div className="caption" style={{ marginTop: 2, color: alerting ? "var(--destructive)" : undefined }}>
-              최근 <span className="num" style={{ fontWeight: 700 }}>{latest}</span> {metric.unit}
+            <div className={`caption mt-0.5 ${alerting ? "text-destructive" : ""}`}>
+              최근 <span className="num font-bold">{latest}</span> {metric.unit}
               {alerting ? " · ⚠️ 정상 범위를 벗어났어요" : ""}
             </div>
           ) : (
-            <div className="caption" style={{ marginTop: 2 }}>아직 측정 기록이 없어요</div>
+            <div className="caption mt-0.5">아직 측정 기록이 없어요</div>
           )}
         </div>
         {!measuring && (
@@ -171,7 +172,7 @@ function MetricRow({ dogId, metric }: { dogId: string; metric: DiseaseMetric }) 
       </div>
 
       {values.length >= 2 && (
-        <div style={{ marginTop: 8 }}>
+        <div className="mt-2">
           <Sparkline values={values} />
         </div>
       )}
